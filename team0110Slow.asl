@@ -1,0 +1,4 @@
+
+ 
++step(X)<-do(skip).
+

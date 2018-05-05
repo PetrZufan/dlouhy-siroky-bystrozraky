@@ -20,22 +20,35 @@ shoesNeeded.
 
 +!go: moves_left(0).
 
-+!go: pos(A, B) & shoesNeeded & shoes(A, B)[source(percept)] <-
-	!go(pick); -shoesNeeded;
+@drop[atomic] +!go: pos(A, B) & depot(A, B) & goToDepot <-
+	if (moves_left(N) & moves_per_round(M) & N == M) {
+		do(drop); -goToDepot;
+	} else {
+		while (moves_left(N) & N > 0) { do(skip); }
+	}.
+
++!go: goToDepot & depot(A, B) <- !goTo(A, B).
+
+@pickShoes[atomic] +!go: pos(A, B) & shoesNeeded & shoes(A, B)[source(percept)] <-
+	if (moves_left(N) & moves_per_round(M) & N == M) {
+		do(pick); -shoesNeeded;
+	} else { 
+		while (moves_left(N) & N > 0) { do(skip); }
+	};
 	.findall(F, friend(F), Friends);
 	.send(Friends, untell, shoes(X, Y)).
 	
-+!go: pos(A, B) & wood(A, B)[source(percept)] <-
-	!go(pick);
+@pickWood[atomic] +!go: pos(A, B) & wood(A, B)[source(percept)] <-
+	if (moves_left(N) & moves_per_round(M) & N == M) {
+		do(pick);
+	} else {
+		while (moves_left(N) & N > 0) { do(skip); }
+	};
 	.findall(F, friend(F), Friends);
 	.send(Friends, untell, wood(X, Y)).
-
-+!go: pos(A, B) & depot(A, B) <- !go(drop).
 	
 +!go: pos(A, B) & goTo(A, B) <- -goTo(A, B).
 +!go: pos(A, B) & goTo(X, Y) <- !goTo(X, Y).
-
-+!go: goToDepot & depot(A, B) <- !goTo(A, B).
 
 +!go: right & pos(A, B) & grid_size(X, Y) & A < Y-1 <- !go(right).
 +!go: right & pos(A, B) <- -right; +left; !go(up); !go(up); !go(up).
@@ -47,9 +60,8 @@ shoesNeeded.
 
 
 
-+!go(_): moves_left(0).
-+!go(X): moves_left(N) & N > 0 <- do(X); !explore.
-+!go(_).
+@go[atomic] +!go(X) <- if (moves_left(N) & N > 0) { do(X); !explore; }.
+
 
 +!goTo(X, Y): pos(A, B) <-
 	if ((X - A) \== 0) {

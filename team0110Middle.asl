@@ -1,6 +1,6 @@
 // TODO: obchazeni preazek
-//		 zlato - zadost o pomoc
-//		untell with annotation
+//		 zlato - zadost o pomoc + zruseni
+//		 transfer
 
 
 glovesNeeded.
@@ -49,31 +49,31 @@ verticalCounter(0).
 	for (wood(X,Y)) {
 		if ((math.abs(A-X) < 2) & (math.abs(B-Y) < 2) & (not wood(X,Y)[source(percept)])) {
 			-wood(X, Y);
-			.send(Friends, untell, wood(X, Y));
+			.send(Friends, untell, wood(X, Y)[source(percept)]);
 		}
 	};
 	for (gold(X,Y)) {
 		if ((math.abs(A-X) < 2) & (math.abs(B-Y) < 2) & (not gold(X,Y)[source(percept)])) {
 			-gold(X, Y);
-			.send(Friends, untell, gold(X, Y));
+			.send(Friends, untell, gold(X, Y)[source(percept)]);
 		}
 	};
 	for (spectacles(X,Y)) {
 		if ((math.abs(A-X) < 2) & (math.abs(B-Y) < 2) & (not spectacles(X,Y)[source(percept)])) {
 			-wood(X, Y);
-			.send(Friends, untell, spectacles(X, Y));
+			.send(Friends, untell, spectacles(X, Y)[source(percept)]);
 		}
 	};
 	for (gloves(X,Y)) {
 		if ((math.abs(A-X) < 2) & (math.abs(B-Y) < 2) & (not gloves(X,Y)[source(percept)])) {
 			-wood(X, Y);
-			.send(Friends, untell, gloves(X, Y));
+			.send(Friends, untell, gloves(X, Y)[source(percept)]);
 		}
 	};
 	for (shoes(X,Y)) {
 		if ((math.abs(A-X) < 2) & (math.abs(B-Y) < 2) & (not shoes(X,Y)[source(percept)])) {
 			-wood(X, Y);
-			.send(Friends, untell, shoes(X, Y));
+			.send(Friends, untell, shoes(X, Y)[source(percept)]);
 		}
 	}.
 
@@ -81,8 +81,8 @@ verticalCounter(0).
  * Go to coordinates X Y.
  * If I am actualy on the coordinates, do nothing.
  * If no move left, do nothing.
- * Otherwise go first verticaly to required row.  //fix comment
- * Then go horizontaly to required column.
+ * Otherwise go first horizontally to required row.
+ * Then go vertically to required column.
  */	
 +!goTo(X,Y): pos(X,Y).
 +!goTo(X,Y) <-
@@ -96,7 +96,7 @@ verticalCounter(0).
 	}.
 	
 /**
- *	Go verticaly to row Y.
+ *	Go vertically to row Y.
  */
 +!goVerticaly(Y) <-
 	?pos(A,B);
@@ -107,7 +107,7 @@ verticalCounter(0).
 	}.
 	
 /**
- *	Go horizontaly to column X.
+ *	Go horizontally to column X.
  */
 +!goHorizontaly(X) <-
 	?pos(A,B);
@@ -291,7 +291,6 @@ verticalCounter(0).
 +!doAction(X) <- 
 	do(skip).
 	
-	
 /**
  * Check wheteher my goal isn't goal of my friend.
  */
@@ -307,20 +306,10 @@ verticalCounter(0).
 	} else {
 		.term2string(Result, "true");
 	}.
-	
 
-+!compare(A,B,U,V,X,Y) <- 
-	?pos(K,L);
-	D1 = math.abs(A-K) + math.abs(B-L);
-	D2 = math.abs(U-K) + math.abs(V-L);
-	if (D2 < D1) {
-		X = U;
-		Y = V;
-	} else {
-		X = A;
-		Y = B;
-	}.
-
+/**
+ * Get goals of my friends.
+ */
 +!getGoals <-
 	.findall(F, friend(F), Friends);
 	.nth(0, Friends, Slow);
@@ -411,7 +400,10 @@ verticalCounter(0).
 		};
 	}.
 
-
+/**
+ * When first step, tell others about objects in surroundings.
+ * Then set goals and do actions.
+ */
 +step(0) <- 
 	!tellAboutObjects;
 	!setGoal;
@@ -420,7 +412,10 @@ verticalCounter(0).
 		!setGoal;
 		!move;
 	}.
-	
+
+/**
+ * Set goals and do actions.
+ */	
 +step(_) <- 
 	!setGoal;
 	!move;
@@ -456,7 +451,6 @@ verticalCounter(0).
 		};
 	}.
 	
-
 +!setGoal: carrying_gold(G) & (G > 0) <-
 	if (not gold(U,V)) {
 		?depot(K,L);

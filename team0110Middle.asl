@@ -85,36 +85,64 @@ verticalCounter(0).
  * Then go vertically to required column.
  */	
 +!goTo(X,Y): pos(X,Y).
+
++!goTo(X,Y): goAround(W,Z) <-
+	!goAround(X,Y,W,Z).
+
 +!goTo(X,Y) <-
 	?pos(A,B);
 	if ((X - A) \== 0) {
-		!goHorizontaly(X)
+		!goHorizontaly(X,Y)
 	} else {
 		if ((Y - B) \== 0) {
-			!goVerticaly(Y);
+			!goVerticaly(X,Y);
 		};
 	}.
 	
 /**
  *	Go vertically to row Y.
  */
-+!goVerticaly(Y) <-
++!goVerticaly(X,Y) <-
 	?pos(A,B);
 	if (Y > B) {
-		!go(down);
+		if (obstacle(A,B+1)) {
+			+source(A,B);
+			+goAround(v,down);
+			!goTo(X,Y);
+		} else {
+			!go(down);
+		};
 	} else {
-		!go(up);
+		if (obstacle(A,B-1)) {
+			+source(A,B);
+			+goAround(v,up);
+			!goTo(X,Y);
+		} else {
+			!go(up);
+		};
 	}.
 	
 /**
  *	Go horizontally to column X.
  */
-+!goHorizontaly(X) <-
++!goHorizontaly(X,Y) <-
 	?pos(A,B);
 	if (X > A) {
-		!go(right);
+		if (obstacle(A+1,B)) {
+			+source(A,B);
+			+goAround(h,right);
+			!goTo(X,Y);
+		} else {
+			!go(right);
+		};
 	} else {
-		!go(left);
+		if (obstacle(A-1,B)) {
+			+source(A,B);
+			+goAround(h,left);
+			!goTo(X,Y);
+		} else {
+			!go(left);
+		};
 	}.
 	
 /**
@@ -239,6 +267,83 @@ verticalCounter(0).
 		+verticalCounter(0);
 		-direction(_,_);
 		+direction(B, down);
+	}.
+	
+/**
+ * If standing in same columm (resp. row) as goal 
+ * or if walked around obstacle to same row (resp column) but closer to goal,
+ * stop walking around.
+ * Otherwise continue in walk around.
+ */
++!goAround(X,Y,W,Z) <-
+	?pos(A,B);
+	?source(K,L);
+	if (W == h) {
+		if ((A == X) | ((B == L) & (math.abs(X-A) < math.abs(X-K)))){
+			-goAround(_,_);
+			-source(_,_);
+			!goTo(X,Y);
+		} else {
+			!goAroundX(X,Y,W,Z)
+		}
+	} else {
+		if ((B == Y) | ((A == K) & (math.abs(Y-B) < math.abs(Y-L)))) {
+			-goAround(_,_);
+			-source(_,_);
+			!goTo(X,Y);
+		} else {
+			!goAroundX(X,Y,W,Z);
+		};
+	}.
+	
+/**
+ * Walk around obstacle.
+ */
++!goAroundX(X,Y,W,Z) <-
+	?pos(A,B);
+	if (Z == right) {
+		if (obstacle(A+1,B)){
+			-goAround(_,_);
+			+goAround(W,down);
+			!goAroundX(X,Y,W,down);
+		} else {
+			-goAround(_,_);
+			+goAround(W,up);
+			!go(right);
+		};
+	};
+	if (Z == down) {
+		if (obstacle(A,B+1)){
+			-goAround(_,_);
+			+goAround(W,left);
+			!goAroundX(X,Y,W,left);
+		} else {
+			-goAround(_,_);
+			+goAround(W,right);
+			!go(down);
+		};
+	};
+	if (Z == left) {
+		if (obstacle(A-1,B)){
+			-goAround(_,_);
+			+goAround(W,up);
+			!goAroundX(X,Y,W,up);
+		} else {
+			-goAround(_,_);
+			+goAround(W,down);
+			!go(left);
+		};
+	};
+	if (Z == up) {
+		if (obstacle(A,B-1)){
+			-goAround(_,_);
+			+goAround(W,right);
+			!goAroundX(X,Y,W,right);
+		} else {
+			-goAround(_,_);
+			+goAround(W,left);
+			!go(up);
+		};
 	}.
 	
 /**
@@ -487,5 +592,7 @@ verticalCounter(0).
 	//!goRandom. // Choose different heuristic.
 	!goByRows.
 
-	
++goal(_,_,_): goAround(_,_) <-
+	-goAround(_,_);
+	-source(_,_).
 

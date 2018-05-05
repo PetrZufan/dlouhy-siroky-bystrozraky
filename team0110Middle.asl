@@ -222,7 +222,7 @@ verticalCounter(0).
 		-direction(_,_);
 		+direction(B, down);
 	};
-	if ((A == up) & (Limit == 2)) {
+	if ((A == up) & (Limit == 3)) {
 		-verticalCounter(_);
 		+verticalCounter(0);
 		-direction(_,_);
@@ -234,7 +234,7 @@ verticalCounter(0).
 		-direction(_,_);
 		+direction(B, up);
 	};
-	if ((A == down) & (Limit == 2)) {
+	if ((A == down) & (Limit == 3)) {
 		-verticalCounter(_);
 		+verticalCounter(0);
 		-direction(_,_);
@@ -256,29 +256,26 @@ verticalCounter(0).
 	-glovesNeeded;
 	-goal(_,_,_);
 	?pos(X,Y);
-	-gloves(X,Y);
+	-gloves(X,Y)[source(_)];
 	.findall(F, friend(F), Friends);
-	.send(Friends, untell, gloves(X,Y));
+	.send(Friends, untell, gloves(X,Y)[source(_)]);
 	do(pick).	
 
 +!doAction(wood): moves_left(M) & moves_per_round(M) <- 
 	-goal(_,_,_);
-	if (phase(0)) {
-		-phase(0);
-	};
 	?pos(X,Y);
 	-wood(X,Y)[source(_)];
 	.findall(F, friend(F), Friends);
-	.send(Friends, untell, wood(X,Y));
+	.send(Friends, untell, wood(X,Y)[source(_)]);
 	do(pick).
 	
 +!doAction(gold): pos(X,Y) & ally(X,Y) & moves_left(M) & moves_per_round(M) <- 
 	-goal(_,_,_);
 	+transfer;
 	?pos(X,Y);
-	-gold(X,Y);
+	-gold(X,Y)[source(_)];
 	.findall(F, friend(F), Friends);
-	.send(Friends, untell, gold(X,Y));
+	.send(Friends, untell, gold(X,Y)[source(_)]);
 	do(pick).
 	
 +!doAction(transfer): pos(X,Y) & ally(X,Y) & moves_left(M) & moves_per_round(M) <-
@@ -366,7 +363,7 @@ verticalCounter(0).
 	.findall(F, friend(F), Friends);
 	.nth(0, Friends, Slow);
 	.nth(1, Friends, Fast);
-	.findall(math.abs(U-A) + math.abs(V-B), wood(A,B), Distances);
+	.findall(math.abs(U-A) + math.abs(V-B), gold(A,B), Distances);
 	.min(Distances, MinDistance);
 	.findall([A,B], (gold(A,B) & (math.abs(U-A) + math.abs(V-B)) == MinDistance
 			& not goal(gold, A, B)[source(Fast)] 
@@ -417,7 +414,6 @@ verticalCounter(0).
 
 +step(0) <- 
 	!tellAboutObjects;
-	+phase(0);
 	!setGoal;
 	!move;
 	if (moves_left(M) & M > 0){
@@ -434,24 +430,16 @@ verticalCounter(0).
 	}.
 	
 	
-+!setGoal: gloves(A,B) & glovesNeeded & not goal(gloves, _, _) <- 
-	-goal(_,_,_);
-	+goal(gloves, A, B).
++!setGoal: gloves(A,B) & glovesNeeded <-
+	if (not goal(gloves,_,_)) {
+		-goal(_,_,_);
+		+goal(gloves, A, B)
+	}.
 	
 +!setGoal: carrying_capacity(C) & carrying_gold(G) & (G == C) | 
 			  carrying_capacity(C) & carrying_wood(W) & (W == C) <-
 	?depot(A,B);
 	+goal(depot,A,B).
-
-/*	
-+!setGoal: phase(0) <-
-	if (wood(A,B)[source(percept)]) {
-		!isGoalAvailable(wood,A,B,Result);
-		if (Result){
-			+goal(wood,A,B);
-		};
-	}.
-*/	
 	
 +!setGoal: transfer <-
 	?pos(X,Y);

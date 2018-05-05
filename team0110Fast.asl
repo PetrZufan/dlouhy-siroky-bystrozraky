@@ -1,24 +1,99 @@
+shoesNeeded.
+
+
+!start.
++!start <- +right.
+
+
++step(_) <- while (moves_left(N) & N > 0) { !go; }.
+
++carrying_wood(0) <- -goToDepot.
++carrying_wood(N): carrying_capacity(N) <- +goToDepot.
+
++wood(X, Y) <- +goTo(X, Y).
++shoes(X, Y) <- +goTo(X, Y).
+
+-wood(X, Y) <- -goTo(X, Y).
+-shoes(X, Y) <- -goTo(X, Y).
+
+
+
++!go: moves_left(0).
+
++!go: pos(A, B) & shoesNeeded & shoes(A, B)[source(percept)] <-
+	!go(pick); -shoesNeeded;
+	.findall(F, friend(F), Friends);
+	.send(Friends, untell, shoes(X, Y)).
+	
++!go: pos(A, B) & wood(A, B)[source(percept)] <-
+	!go(pick);
+	.findall(F, friend(F), Friends);
+	.send(Friends, untell, wood(X, Y)).
+
++!go: pos(A, B) & depot(A, B) <- !go(drop).
+	
++!go: pos(A, B) & goTo(A, B) <- -goTo(A, B).
++!go: pos(A, B) & goTo(X, Y) <- !goTo(X, Y).
+
++!go: goToDepot & depot(A, B) <- !goTo(A, B).
+
++!go: right & pos(A, B) & grid_size(X, Y) & A < Y-1 <- !go(right).
++!go: right & pos(A, B) <- -right; +left; !go(up); !go(up); !go(up).
+
++!go: left & pos(A, B) & A >= 1 <- !go(left).
++!go: left & pos(A, B) <- -left; +right; !go(up); !go(up); !go(up).
+
++!go: moves_left(N) & N > 0 <- !go(skip).
+
+
+
++!go(_): moves_left(0).
++!go(X): moves_left(N) & N > 0 <- do(X); !explore.
++!go(_).
+
++!goTo(X, Y): pos(A, B) <-
+	if ((X - A) \== 0) {
+		if (X > A) { !go(right); } else { !go(left); }
+	} else {
+		if ((Y - B) \== 0) {
+			if (Y > B) { !go(down); } else { !go(up); }
+		};
+	}.
+
 
  
- 
-+step(0) <- .println("START");?grid_size(A,B);+right(A);+down(B);+right;do(skip);do(skip);do(skip).
++!explore: pos(X, Y) <-
+	+explore(X, Y);
+	+explore(X, Y - 1);
+	+explore(X, Y + 1);
+	+explore(X - 1, Y);
+	+explore(X + 1, Y);
+	+explore(X - 1, Y - 1);
+	+explore(X - 1, Y + 1);
+	+explore(X + 1, Y - 1);
+	+explore(X + 1, Y + 1);
+	.
 
++explore(X, Y) <-
+	.findall(F, friend(F), Friends);
+	
+	if (depot(X, Y)[source(percept)]) { .send(Friends, tell, depot(X, Y)); }
 
- +step(X): shoes(A,B)&pos(A,B)<-do(pick).
-
-
- +step(X): moves_per_round(6)<- !go;!go.
-
- +step(X):moves_per_round(3)<-!go.
- 
- // do(right);do(right);do(right);do(left);do(left);do(left).
- 
- //+!go<-do(skip);do(skip);do(skip).
-
-
- +!go: right & pos(A,B) & right(C)&A<C-1<- do(right);do(skip);do(skip).
- +!go: right <- -right;+left;do(up);do(left);do(left).	
- +!go: left & pos(A,B) & A>0 <- do(left);do(skip);do(skip).	
- +!go: left<-  -left;+right;do(up);do(right);do(right).
-
-
+	if (obstacle(X, Y)[source(percept)]) { .send(Friends, tell, obstacle(X, Y)); }
+	
+	if (gold(X, Y)[source(percept)]) { .send(Friends, tell, gold(X, Y)); }
+	if (not gold(X, Y)[source(percept)]) { .send(Friends, untell, gold(X, Y)); }
+	
+	if (wood(X, Y)[source(percept)]) { .send(Friends, tell, wood(X, Y)); }
+	if (not gold(X, Y)[source(percept)]) { .send(Friends, untell, wood(X, Y)); }
+	
+	if (spectacles(X, Y)[source(percept)]) { .send(Friends, tell, spectacles(X, Y)); }
+	if (not spectacles(X, Y)[source(percept)]) { .send(Friends, untell, spectacles(X, Y)); }
+	
+	if (gloves(X, Y)[source(percept)]) { .send(Friends, tell, gloves(X, Y)); }
+	if (not gloves(X, Y)[source(percept)]) { .send(Friends, untell, gloves(X, Y)); }
+	
+	if (shoes(X, B)[source(percept)]) { .send(Friends, tell, shoes(X, Y)); }
+	if (not shoes(X, B)[source(percept)]) { .send(Friends, untell, shoes(X, Y)); }
+	
+	-explore(X, Y).

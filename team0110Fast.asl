@@ -20,7 +20,9 @@ shoesNeeded.
 
 +helpNeeded(X, Y) <-
 	if (carrying_wood(N) & N > 0) { +goToDepot; }
-	+goal(X, Y).
+	+goal(X, Y); +goTo(X, Y).
+-helpNeeded(X, Y) <-
+	-goal(X, Y); -goTo(X, Y).
 
 -wood(X, Y) <- -goal(wood, X, Y).
 -shoes(X, Y) <- -goal(shoes, X, Y).
@@ -83,7 +85,24 @@ shoesNeeded.
 
 
 
-@go[atomic] +!go(X) <- if (moves_left(N) & N > 0) { do(X); !explore; }.
++!go(up): goObstacle(up) <- !go(right).
++!go(down): goObstacle(down) <- !go(left).
++!go(left): goObstacle(left) <- !go(up).
++!go(right): goObstacle(right) <- !go(down).
+
++!checkObstacles: pos(X, Y) <-
+	if (obstacle(X, Y - 1)) { +goObstacle(up); }
+	else { -goObstacle(up) };
+	if (obstacle(X, Y + 1)) { +goObstacle(down); }
+	else { -goObstacle(down) };
+	if (obstacle(X - 1, Y)) { +goObstacle(left); }
+	else { -goObstacle(left) };
+	if (obstacle(X + 1, Y)) { +goObstacle(right); }
+	else { -goObstacle(right) }.
+
+@go[atomic] +!go(X) <-
+	!checkObstacles;
+	if (not goObstacle(X) & moves_left(N) & N > 0) { do(X); !explore; }.
 
 
 +!goTo(X, Y): pos(A, B) <-

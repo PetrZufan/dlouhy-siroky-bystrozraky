@@ -293,7 +293,7 @@ verticalCounter(0).
  * stop walking around.
  * Otherwise continue in walk around.
  */
-@goAround[atomic]
+//@goAround[atomic]
 +!goAround(X,Y,W,Z) <-
 	?pos(A,B);
 	?source(K,L);
@@ -318,7 +318,7 @@ verticalCounter(0).
 /**
  * Walk around obstacle in clockwise direction.
  */
-@goAroundX0[atomic]
+//@goAroundX0[atomic]
 +!goAroundX(X,Y,W,Z): obstaclesDirection(0) <-
 	?grid_size(K,L);
 	?pos(A,B);
@@ -394,7 +394,7 @@ verticalCounter(0).
 /**
  * Walk around obstacle in reverse clockwise direction.
  */
-@goAroundX1[atomic]
+//@goAroundX1[atomic]
 +!goAroundX(X,Y,W,Z): obstaclesDirection(1) <-
 	?grid_size(K,L);
 	?pos(A,B);
@@ -467,7 +467,7 @@ verticalCounter(0).
 		};
 	}.	
 
-@goAroundX2[atomic]
+//@goAroundX2[atomic]
 +!goAroundX(X,Y,W,Z) <-
 	+obstaclesDirection(0);
 	!goAroundX(X,Y,W,Z).
@@ -511,7 +511,8 @@ verticalCounter(0).
 	-gold(X,Y)[source(_)];
 	.findall(F, friend(F), Friends);
 	.send(Friends, untell, gold(X,Y)[source(_)]);
-	do(pick).
+	do(pick);
+	.send(Friends, untell, helpNeeded(X,Y)).
 	
 /**
  * Wait for friends arrival.
@@ -624,7 +625,7 @@ verticalCounter(0).
 @setGoal0[atomic]
 +!setGoal: gloves(A,B) & glovesNeeded <-
 	if (not goal(gloves,_,_)) {
-		if (goal(gold,X,Y)) {
+		if (goal(gold,X,Y)[source(self)]) {
 			.findall(F, friend(F), Friends);
 			.send(Friends, untell, helpNeeded(X,Y));
 		};

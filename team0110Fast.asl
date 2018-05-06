@@ -46,9 +46,6 @@ shoesNeeded.
 
 +!go: moves_left(0).
 
-+!go: pos(A, B) & goal(_, A, B) <- -goal(_, A, B); !go.
-+!go: pos(A, B) & goTo(A, B) <- -goTo(A, B); !randomizeGoTo; !go.
-
 @drop[atomic] +!go: pos(A, B) & depot(A, B) & goToDepot <-
 	if (moves_left(N) & moves_per_round(M) & N == M) {
 		do(drop); -goToDepot;
@@ -79,8 +76,10 @@ shoesNeeded.
 	.findall(F, friend(F), Friends);
 	.send(Friends, untell, wood(X, Y)).
 	
++!go: pos(A, B) & goal(_, A, B) <- -goal(_, A, B); !go.
 +!go: pos(A, B) & goal(_, X, Y) <- !goTo(X, Y).
 
++!go: pos(A, B) & goTo(A, B) <- -goTo(A, B); !randomizeGoTo.
 +!go: pos(A, B) & goTo(X, Y) <- !goTo(X, Y).
 
 +!go: moves_left(N) & N > 0 <- !randomizeGoTo. // !go(skip).

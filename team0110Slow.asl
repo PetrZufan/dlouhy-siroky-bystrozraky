@@ -1,6 +1,6 @@
 prepared(false).
 activity(explore).
-visibility(3).
+visibility(2).
 
 goal(none, none).
 

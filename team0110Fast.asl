@@ -2,7 +2,7 @@ shoesNeeded.
 
 
 !start.
-+!start <- +right.
++!start <- !randomizeGoTo.
 
 
 +step(_) <- while (moves_left(N) & N > 0) { !go; }.
@@ -10,11 +10,37 @@ shoesNeeded.
 +carrying_wood(0) <- -goToDepot.
 +carrying_wood(N): carrying_capacity(N) <- +goToDepot.
 
-+wood(X, Y) <- +goTo(X, Y).
-+shoes(X, Y) <- +goTo(X, Y).
++carrying_gold(N): N > 0 <- +goToDepot.
 
--wood(X, Y) <- -goTo(X, Y).
--shoes(X, Y) <- -goTo(X, Y).
++wood(X, Y) <-
+	!isGoalAvailable(wood, X, Y, R);
+	if (R) { +goal(wood, X, Y); }
+	else { -goal(wood, X, Y); }.
++shoes(X, Y) <- +goal(shoes, X, Y).
+
++helpNeeded(X, Y) <-
+	if (carrying_wood(N) & N > 0) { +goToDepot; }
+	+goal(X, Y).
+
+-wood(X, Y) <- -goal(wood, X, Y).
+-shoes(X, Y) <- -goal(shoes, X, Y).
+
++goTo(X,Y) <- .print("+goTo(", X, ",", Y, ")").
+
+
+
++!isGoalAvailable(A,X,Y, Result) <-
+	.findall(F, friend(F), Friends);
+	.nth(0, Friends, Slow);
+	.send(Slow, askOne, goal(A,X,Y), GoalSlow);
+	.nth(1, Friends, Fast);
+	.send(Fast, askOne, goal(A,X,Y), GoalFast);
+	if ((GoalSlow == goal(A,X,Y)[source(Slow)]) | 
+		(GoalFast == goal(A,X,Y)[source(Fast)])){
+		.term2string(Result, "false");
+	} else {
+		.term2string(Result, "true");
+	}.
 
 
 
@@ -47,16 +73,13 @@ shoesNeeded.
 	.findall(F, friend(F), Friends);
 	.send(Friends, untell, wood(X, Y)).
 	
-+!go: pos(A, B) & goTo(A, B) <- -goTo(A, B).
++!go: pos(A, B) & goal(_, A, B) <- -goal(_, A, B).
++!go: pos(A, B) & goal(_, X, Y) <- !goTo(X, Y).
+	
++!go: pos(A, B) & goTo(A, B) <- -goTo(A, B); !randomizeGoTo.
 +!go: pos(A, B) & goTo(X, Y) <- !goTo(X, Y).
 
-+!go: right & pos(A, B) & grid_size(X, Y) & A < Y-1 <- !go(right).
-+!go: right & pos(A, B) <- -right; +left; !go(up); !go(up); !go(up).
-
-+!go: left & pos(A, B) & A >= 1 <- !go(left).
-+!go: left & pos(A, B) <- -left; +right; !go(up); !go(up); !go(up).
-
-+!go: moves_left(N) & N > 0 <- !go(skip).
++!go: moves_left(N) & N > 0 <- !randomizeGoTo. // !go(skip).
 
 
 
@@ -64,14 +87,32 @@ shoesNeeded.
 
 
 +!goTo(X, Y): pos(A, B) <-
-	if ((X - A) \== 0) {
-		if (X > A) { !go(right); } else { !go(left); }
+	if (math.floor(math.random(2)) == 0) {
+		if ((X - A) \== 0) {
+			if (X > A) { !go(right); } else { !go(left); }
+		} else {
+			if ((Y - B) \== 0) {
+				if (Y > B) { !go(down); } else { !go(up); }
+			}
+		}
 	} else {
 		if ((Y - B) \== 0) {
-			if (Y > B) { !go(down); } else { !go(up); }
-		};
+				if (Y > B) { !go(down); } else { !go(up); }
+		} else {
+			if ((X - A) \== 0) {
+				if (X > A) { !go(right); } else { !go(left); }
+			}
+		}
 	}.
 
+	
+/* GoTo random edge */
++!randomizeGoTo <- !randomizeGoTo(math.floor(math.random(4))).
++!randomizeGoTo(0) <- ?grid_size(X, Y); +goTo(0, math.floor(math.random(Y))).
++!randomizeGoTo(1) <- ?grid_size(X, Y); +goTo(X - 1, math.floor(math.random(Y))).
++!randomizeGoTo(2) <- ?grid_size(X, Y); +goTo(math.floor(math.random(X)), 0).
++!randomizeGoTo(3) <- ?grid_size(X, Y); +goTo(math.floor(math.random(X)), Y - 1).
+	
 
  
 +!explore: pos(X, Y) <-

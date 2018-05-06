@@ -12,17 +12,8 @@ shoesNeeded.
 
 +carrying_gold(N): N > 0 <- +goToDepot.
 
-+wood(X, Y) <-
-	!isGoalAvailable(wood, X, Y, R);
-	if (R) { +goal(wood, X, Y); }
-	else { -goal(wood, X, Y); }.
-+shoes(X, Y): shoesNeeded <- +goal(shoes, X, Y).
-
-+helpNeeded(X, Y) <-
-	if (carrying_wood(N) & N > 0) { +goToDepot; }
-	+goal(help, X, Y); +goTo(X, Y).
--helpNeeded(X, Y) <-
-	-goal(help, X, Y); -goTo(X, Y).
++helpNeeded(X, Y) <- +goal(help, X, Y).
+-helpNeeded(X, Y) <- -goal(help, X, Y).
 
 -wood(X, Y) <- -goal(wood, X, Y).
 -shoes(X, Y) <- -goal(shoes, X, Y).
@@ -33,7 +24,7 @@ shoesNeeded.
 +!tryFindGoal: goal(_, _, _).
 +!tryFindGoal: helpNeeded(A, B) <- +goal(help, A, B).
 +!tryFindGoal: shoesNeeded & shoes(A, B) <- +goal(shoes, A, B).
-+!tryFindGoal: wood(A, B) <- +goal(wood, A, B).
++!tryFindGoal: wood(A, B) <- !isGoalAvailable(wood, X, Y, R); if (R) { +goal(wood, A, B); }.
 +!tryFindGoal: carrying_wood(N) & N > 1 <- +goToDepot.
 +!tryFindGoal.
 

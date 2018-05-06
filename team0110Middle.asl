@@ -551,16 +551,11 @@ verticalCounter(0).
 	.findall(math.abs(U-A) + math.abs(V-B), wood(A,B), Distances);
 	.min(Distances, MinDistance);
 	.findall([A,B], (wood(A,B) & (math.abs(U-A) + math.abs(V-B)) == MinDistance
-			& not goal(wood, A, B)[source(Fast)] 
-			& not goal(wood, A, B)[source(Slow)]), MinWoods);
-	if (not empty(MinWoods)) {
-		.nth(0, MinWoods, Wood);
-		.nth(0, Wood, X);
-		.nth(1, Wood, Y);
-	} else {
-		X = -1;
-		Y = -1;
-	};
+			/*& not goal(wood, A, B)[source(Fast)] 
+			& not goal(wood, A, B)[source(Slow)]*/), MinWoods);
+	.nth(0, MinWoods, Wood);
+	.nth(0, Wood, X);
+	.nth(1, Wood, Y);
 	-goal(_,_,_)[source(Fast)];
 	-goal(_,_,_)[source(Slow)].
 	
@@ -576,50 +571,14 @@ verticalCounter(0).
 	.findall(math.abs(U-A) + math.abs(V-B), gold(A,B), Distances);
 	.min(Distances, MinDistance);
 	.findall([A,B], (gold(A,B) & (math.abs(U-A) + math.abs(V-B)) == MinDistance
-			& not goal(gold, A, B)[source(Fast)] 
-			& not goal(gold, A, B)[source(Slow)]), MinGolds);
-	if (not empty(MinGolds)) {
-		.nth(0, MinGolds, Gold);
-		.nth(0, Gold, X);
-		.nth(1, Gold, Y);
-	} else {
-		X = -1;
-		Y = -1;
-	};
+			/*& not goal(gold, A, B)[source(Fast)] 
+			& not goal(gold, A, B)[source(Slow)]*/), MinGolds);
+	.nth(0, MinGolds, Gold);
+	.nth(0, Gold, X);
+	.nth(1, Gold, Y);
 	-goal(_,_,_)[source(Fast)];
 	-goal(_,_,_)[source(Slow)].
 	
-/**
- * Get coordinates of closest known and nongoaled material (wood or gold).
- */
-+!getClosest(A,X,Y) <-
-	?pos(U,V);
-	if (wood(_,_)) {
-		!getClosest(wood, K, L);		
-		if (gold(_,_)) {
-			!getClosest(gold, M, N);
-			if ((math.abs(U-K) + math.abs(V-L)) > (math.abs(U-M) + math.abs(V-N))) {
-				.term2string(A, "wood");
-				.term2string(X, K);
-				.term2string(Y, L);
-			} else {
-				.term2string(A, "gold");
-				.term2string(X, M);
-				.term2string(Y, N);
-			};
-		} else {
-			.term2string(A, "wood");
-			.term2string(X, K);
-			.term2string(Y, L);
-		};
-	} else {
-		if (gold(_,_)) {
-			!getClosest(gold, M, N);
-			.term2string(A, "gold");
-			.term2string(X, M);
-			.term2string(Y, N);
-		};
-	}.
 
 /**
  * When first step, tell others about objects in surroundings.
@@ -648,6 +607,10 @@ verticalCounter(0).
 	
 +!setGoal: gloves(A,B) & glovesNeeded <-
 	if (not goal(gloves,_,_)) {
+		if (goal(gold,X,Y)) {
+			.findall(F, friend(F), Friends);
+			.send(Friends, untell, helpNeeded(X,Y));
+		};
 		-goal(_,_,_);
 		+goal(gloves, A, B)
 	}.
@@ -664,46 +627,76 @@ verticalCounter(0).
 	+goal(transfer,X,Y).
 	
 +!setGoal: carrying_wood(W) & (W > 0) <-
-	if (not wood(U,V)) {
+	!getGoals;
+	.findall(F, friend(F), Friends);
+	.nth(0, Friends, Slow);
+	.nth(1, Friends, Fast);
+	if (wood(X,Y) & not goal(wood,X,Y)[source(Fast)] 
+		& not goal(wood,X,Y)[source(Slow)] ) {
+		!getClosest(wood,K,L);
+		-goal(_,_,_);
+		+goal(wood,K,L);
+	} else {
 		?depot(K,L);
 		-goal(_,_,_);
 		+goal(depot,K,L);
-	} else {
-		!getClosest(wood,K,L);
-		if (K \== -1 & L \== -1) {
-			-goal(_,_,_);
-			+goal(wood,K,L);
-		};
 	}.
 	
 +!setGoal: carrying_gold(G) & (G > 0) <-
-	if (not gold(U,V)) {
+	!getGoals;
+	.findall(F, friend(F), Friends);
+	.nth(0, Friends, Slow);
+	.nth(1, Friends, Fast);
+	if (gold(X,Y) & not goal(gold,X,Y)[source(Fast)] 
+		& not goal(gold,X,Y)[source(Slow)] ) {
+		!getClosest(gold,K,L);
+		-goal(_,_,_);
+		+goal(gold,K,L);
+		.findall(F, friend(F), Friends);
+		.send(Friends, tell, helpNeeded(K,L));
+	} else {
 		?depot(K,L);
 		-goal(_,_,_);
 		+goal(depot,K,L);
-	} else {
+	}.
+	
++!setGoal <- 
+	!getGoals;
+	.findall(F, friend(F), Friends);
+	.nth(0, Friends, Slow);
+	.nth(1, Friends, Fast);
+	if (gold(X,Y) & not goal(gold,X,Y)[source(Fast)] 
+		& not goal(gold,X,Y)[source(Slow)]) {
 		!getClosest(gold,K,L);
-		if (K \== -1 & L \== -1) {
+		if (wood(U,V) & not goal(wood,U,V)[source(Fast)] 
+			& not goal(wood,U,V)[source(Slow)]) {
+			!getClosest(wood,M,N);
+			?pos(A,B);
+			DG = math.abs(A-K) + math.abs(B-L);
+			DW = math.abs(A-M) + math.abs(B-N);
+			if (DG > DW) {
+				-goal(_,_,_);
+				+goal(wood,M,N);
+			} else {
+				-goal(_,_,_);
+				+goal(gold,K,L);
+				.findall(F, friend(F), Friends);
+				.send(Friends, tell, helpNeeded(K,L));
+			};
+		} else {
 			-goal(_,_,_);
 			+goal(gold,K,L);
 			.findall(F, friend(F), Friends);
 			.send(Friends, tell, helpNeeded(K,L));
 		};
-	}.		
-	
-+!setGoal <- 
-	if (wood(U,V) | gold(U,V)){
-		!getClosest(A,K,L);
-		if (K \== -1 & L \== -1) {
+	} else {
+		if (wood(X,Y) & not goal(wood,X,Y)[source(Fast)] 
+			& not goal(wood,X,Y)[source(Slow)]) {
+			!getClosest(wood,K,L);
 			-goal(_,_,_);
-			+goal(A,K,L);
-			if (A == gold) {
-				.findall(F, friend(F), Friends);
-				.send(Friends, tell, helpNeeded(K,L));
-			};
+			+goal(wood,K,L);
 		};
-	}.
-	
+	}.	
 	
 +!move: goal(G,X,Y) & pos(X,Y) <-
 	!doAction(G).

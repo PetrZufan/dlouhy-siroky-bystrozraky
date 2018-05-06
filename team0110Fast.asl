@@ -80,7 +80,7 @@ shoesNeeded.
 +!go: pos(A, B) & goal(_, X, Y) <- !goTo(X, Y).
 
 +!go: pos(A, B) & goTo(A, B) <- -goTo(A, B); !randomizeGoTo; !go.
-+!go: pos(A, B) & goTo(X, Y) <- !goTo(X, Y).
++!go: pos(A, B) & goTo(X, Y) <- !goToRandom(X, Y).
 
 +!go: moves_left(N) & N > 0 <- !randomizeGoTo. // !go(skip).
 
@@ -107,6 +107,14 @@ shoesNeeded.
 
 
 +!goTo(X, Y): pos(A, B) <-
+	if ((X - A) \== 0) {
+		if (X > A) { !go(right); } else { !go(left); }
+	} else {
+		if ((Y - B) \== 0) {
+			if (Y > B) { !go(down); } else { !go(up); }
+		}
+	}.
++!goToRandom(X, Y): pos(A, B) <-
 	if (math.floor(math.random(2)) == 0) {
 		if ((X - A) \== 0) {
 			if (X > A) { !go(right); } else { !go(left); }

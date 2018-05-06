@@ -687,7 +687,7 @@ verticalCounter(0).
 			-goal(_,_,_);
 			+goal(gold,K,L);
 			.findall(F, friend(F), Friends);
-			.send(Friends, tell, help(K,L)); //TODO: call for help.
+			.send(Friends, tell, helpNeeded(K,L));
 		};
 	}.		
 	
@@ -699,7 +699,7 @@ verticalCounter(0).
 			+goal(A,K,L);
 			if (A == gold) {
 				.findall(F, friend(F), Friends);
-				.send(Friends, tell, help(K,L)); //TODO: call for help.
+				.send(Friends, tell, helpNeeded(K,L));
 			};
 		};
 	}.

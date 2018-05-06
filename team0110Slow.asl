@@ -7,6 +7,7 @@ move_desire(none).
 move_priority(none).
 move_cancel(none).
 last_move(none).
+previous_activity(none).
 
 !start.
 
@@ -22,6 +23,17 @@ last_move(none).
 
 +step(X): prepared(P) & visibility(V) <-
 	if (P) {
+		.count(helpNeeded(HX, HY), HN);
+		if (HN > 0) {
+			?helpNeeded(HX, HY);
+			?activity(AC);
+			.print("HELP NEEDED AT (", HX, ", ", HY, ")");.print("HELP NEEDED AT (", HX, ", ", HY, ")");.print("HELP NEEDED AT (", HX, ", ", HY, ")");
+			.print("HELP NEEDED AT (", HX, ", ", HY, ")");.print("HELP NEEDED AT (", HX, ", ", HY, ")");.print("HELP NEEDED AT (", HX, ", ", HY, ")");
+			.abolish(goal(_, _)); +goal(HX, HY);
+			.abolish(previous_activity(_)); +previous_activity(AC);
+			.abolish(activity(_)); +activity(help_with_gold);
+		}
+	
 		if (V == 3) {
 			!find_spectacles;
 		}
@@ -42,7 +54,7 @@ last_move(none).
 				!do_action;
 			}
 		} else {	
-			if (Activity == spectacles | Activity == harvest_wood | Activity == go_home) {
+			if (Activity == spectacles | Activity == harvest_wood | Activity == go_home | Activity == help_with_gold) {
 				if (Activity == harvest_wood) {
 					.count(wood(WX, WY), N);
 					if (N > 0) {
@@ -53,6 +65,7 @@ last_move(none).
 						do(skip);
 					}
 				} else {
+					!check_fields;
 					!figure_next_move;
 					!do_action;
 				}
@@ -352,6 +365,14 @@ last_move(none).
 					.abolish(wood(A, B));
 					do(skip);
 				}	
+			}
+			
+			if (Activity == help_with_gold) {
+				.print("picking gold");
+				do(skip);
+				?previous_activity(Prev);
+				.abolish(helpNeeded(A, B));
+				.abolish(activity(_)); +activity(Prev);
 			}
 			
 			if (Activity == go_home) {

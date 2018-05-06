@@ -46,8 +46,8 @@ shoesNeeded.
 
 +!go: moves_left(0).
 
-+!go: pos(A, B) & goal(_, A, B) <- -goal(_, A, B).
-+!go: pos(A, B) & goTo(A, B) <- -goTo(A, B); !randomizeGoTo.
++!go: pos(A, B) & goal(_, A, B) <- -goal(_, A, B); !go.
++!go: pos(A, B) & goTo(A, B) <- -goTo(A, B); !randomizeGoTo; !go.
 
 @drop[atomic] +!go: pos(A, B) & depot(A, B) & goToDepot <-
 	if (moves_left(N) & moves_per_round(M) & N == M) {

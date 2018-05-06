@@ -5,7 +5,7 @@ shoesNeeded.
 +!start <- !randomizeGoTo.
 
 
-+step(_) <- while (moves_left(N) & N > 0) { !go; }.
++step(_) <- while (moves_left(N) & N > 0) { !tryFindGoal; !go; }.
 
 +carrying_wood(0) <- -goToDepot.
 +carrying_wood(N): carrying_capacity(N) <- +goToDepot.
@@ -30,6 +30,12 @@ shoesNeeded.
 +goTo(X,Y) <- .print("+goTo(", X, ",", Y, ")").
 
 
++!tryFindGoal: goal(_, _).
++!tryFindGoal: wood(A, B) <- +goal(A, B).
++!tryFindGoal: shoesNeeded & shoes(A, B) <- +goal(A, B).
++!tryFindGoal: carrying_wood(N) & N > 1 <- +goToDepot.
++!tryFindGoal.
+
 
 +!isGoalAvailable(A,X,Y, Result) <-
 	.findall(F, friend(F), Friends);
@@ -47,6 +53,9 @@ shoesNeeded.
 
 
 +!go: moves_left(0).
+
++!go: pos(A, B) & goal(_, A, B) <- -goal(_, A, B).
++!go: pos(A, B) & goTo(A, B) <- -goTo(A, B); !randomizeGoTo.
 
 @drop[atomic] +!go: pos(A, B) & depot(A, B) & goToDepot <-
 	if (moves_left(N) & moves_per_round(M) & N == M) {
@@ -75,10 +84,8 @@ shoesNeeded.
 	.findall(F, friend(F), Friends);
 	.send(Friends, untell, wood(X, Y)).
 	
-+!go: pos(A, B) & goal(_, A, B) <- -goal(_, A, B).
 +!go: pos(A, B) & goal(_, X, Y) <- !goTo(X, Y).
-	
-+!go: pos(A, B) & goTo(A, B) <- -goTo(A, B); !randomizeGoTo.
+
 +!go: pos(A, B) & goTo(X, Y) <- !goTo(X, Y).
 
 +!go: moves_left(N) & N > 0 <- !randomizeGoTo. // !go(skip).

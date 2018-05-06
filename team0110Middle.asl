@@ -6,6 +6,7 @@ verticalCounter(0).
 /**
  *	Send information about discovered and disappeared objects to friends and to myself.
  */
+@tellAboutObjects[atomic]
 +!tellAboutObjects <-
 	!tellAboutDisappeared;
 	!tellAboutDiscovered.
@@ -13,6 +14,7 @@ verticalCounter(0).
 /**
  *	Send information about discovered objects to friends and to myself.
  */
+@tellAboutDiscovered[atomic]
 +!tellAboutDiscovered <-
 	.findall(F, friend(F), Friends);
 	for (wood(X, Y)[source(percept)]) {
@@ -39,37 +41,38 @@ verticalCounter(0).
 /**
  *	Send information about disappeared objects to friends and to myself.
  */	
+@tellAboutDisappeared[atomic]
 +!tellAboutDisappeared <-
 	.findall(F, friend(F), Friends);
 	?pos(A,B);
 	for (wood(X,Y)) {
 		if ((math.abs(A-X) < 2) & (math.abs(B-Y) < 2) & (not wood(X,Y)[source(percept)])) {
-			-wood(X, Y);
-			.send(Friends, untell, wood(X, Y)[source(percept)]);
+			-wood(X, Y)[source(_)];
+			.send(Friends, untell, wood(X, Y)[source(_)]);
 		}
 	};
 	for (gold(X,Y)) {
 		if ((math.abs(A-X) < 2) & (math.abs(B-Y) < 2) & (not gold(X,Y)[source(percept)])) {
-			-gold(X, Y);
-			.send(Friends, untell, gold(X, Y)[source(percept)]);
+			-gold(X, Y)[source(_)];
+			.send(Friends, untell, gold(X, Y)[source(_)]);
 		}
 	};
 	for (spectacles(X,Y)) {
 		if ((math.abs(A-X) < 2) & (math.abs(B-Y) < 2) & (not spectacles(X,Y)[source(percept)])) {
-			-wood(X, Y);
-			.send(Friends, untell, spectacles(X, Y)[source(percept)]);
+			-spectacles(X, Y)[source(_)];
+			.send(Friends, untell, spectacles(X, Y)[source(_)]);
 		}
 	};
 	for (gloves(X,Y)) {
 		if ((math.abs(A-X) < 2) & (math.abs(B-Y) < 2) & (not gloves(X,Y)[source(percept)])) {
-			-wood(X, Y);
-			.send(Friends, untell, gloves(X, Y)[source(percept)]);
+			-gloves(X, Y)[source(_)];
+			.send(Friends, untell, gloves(X, Y)[source(_)]);
 		}
 	};
 	for (shoes(X,Y)) {
 		if ((math.abs(A-X) < 2) & (math.abs(B-Y) < 2) & (not shoes(X,Y)[source(percept)])) {
-			-wood(X, Y);
-			.send(Friends, untell, shoes(X, Y)[source(percept)]);
+			-shoes(X, Y)[source(_)];
+			.send(Friends, untell, shoes(X, Y)[source(_)]);
 		}
 	}.
 
@@ -80,8 +83,10 @@ verticalCounter(0).
  * Otherwise go first horizontally to required row.
  * Then go vertically to required column.
  */	
+@goTo0[atomic]
 +!goTo(X,Y): pos(X,Y).
 
+@goTo1[atomic]
 +!goTo(X,Y): goAround(W,Z) <-
 	if (destination(X,Y)){
 		!goAround(X,Y,W,Z);
@@ -92,7 +97,7 @@ verticalCounter(0).
 		!goTo(X,Y);
 	}.
 	
-
+@goTo2[atomic]
 +!goTo(X,Y) <-
 	?pos(A,B);
 	if ((X - A) \== 0) {
@@ -106,6 +111,7 @@ verticalCounter(0).
 /**
  *	Go vertically to row Y.
  */
+@goVerticaly[atomic]
 +!goVerticaly(X,Y) <-
 	?pos(A,B);
 	if (Y > B) {
@@ -131,6 +137,7 @@ verticalCounter(0).
 /**
  *	Go horizontally to column X.
  */
+@goHorizontaly[atomic]
 +!goHorizontaly(X,Y) <-
 	?pos(A,B);
 	if (X > A) {
@@ -157,6 +164,7 @@ verticalCounter(0).
  * Do one step in direction X. 
  * Then tell others what I can see.
  */
+@go[atomic]
 +!go(X) <-
 	if (moves_left(M) & M > 0) { //extra testing
 		do(X);
@@ -212,6 +220,7 @@ verticalCounter(0).
 /**
  *	Go row by row down and up.
  */
+@goByRows[atomic]
 +!goByRows <-
 	!setDirection;
 	?direction(A,B);
@@ -239,6 +248,7 @@ verticalCounter(0).
 /**
  * Set the actual and next direction for goByRow.
  */
+@setDirection[atomic]
 +!setDirection <-
 	?direction(A,B);
 	?verticalCounter(Limit);
@@ -283,6 +293,7 @@ verticalCounter(0).
  * stop walking around.
  * Otherwise continue in walk around.
  */
+@goAround[atomic]
 +!goAround(X,Y,W,Z) <-
 	?pos(A,B);
 	?source(K,L);
@@ -307,6 +318,7 @@ verticalCounter(0).
 /**
  * Walk around obstacle in clockwise direction.
  */
+@goAroundX0[atomic]
 +!goAroundX(X,Y,W,Z): obstaclesDirection(0) <-
 	?grid_size(K,L);
 	?pos(A,B);
@@ -382,6 +394,7 @@ verticalCounter(0).
 /**
  * Walk around obstacle in reverse clockwise direction.
  */
+@goAroundX1[atomic]
 +!goAroundX(X,Y,W,Z): obstaclesDirection(1) <-
 	?grid_size(K,L);
 	?pos(A,B);
@@ -453,7 +466,8 @@ verticalCounter(0).
 			};
 		};
 	}.	
-	
+
+@goAroundX2[atomic]
 +!goAroundX(X,Y,W,Z) <-
 	+obstaclesDirection(0);
 	!goAroundX(X,Y,W,Z).
@@ -463,12 +477,15 @@ verticalCounter(0).
  * Execute the action.
  * Skip otherwise.
  */
+@doAction0[atomic]
 +!doAction(X): moves_left(0). 
- 
+
+@doAction1[atomic]
 +!doAction(depot): moves_left(M) & moves_per_round(M) <- 
 	-goal(_,_,_);
 	do(drop).
-	
+
+@doAction2[atomic]	
 +!doAction(gloves): moves_left(M) & moves_per_round(M) <- 
 	-glovesNeeded;
 	-goal(_,_,_);
@@ -478,6 +495,7 @@ verticalCounter(0).
 	.send(Friends, untell, gloves(X,Y)[source(_)]);
 	do(pick).	
 
+@doAction3[atomic]
 +!doAction(wood): moves_left(M) & moves_per_round(M) <- 
 	-goal(_,_,_);
 	?pos(X,Y);
@@ -485,7 +503,8 @@ verticalCounter(0).
 	.findall(F, friend(F), Friends);
 	.send(Friends, untell, wood(X,Y)[source(_)]);
 	do(pick).
-	
+
+@doAction4[atomic]	
 +!doAction(gold): pos(X,Y) & ally(X,Y) & moves_left(M) & moves_per_round(M) <- 
 	-goal(_,_,_);
 	?pos(X,Y);
@@ -497,12 +516,14 @@ verticalCounter(0).
 /**
  * Wait for friends arrival.
  */
+ @doAction5[atomic]
 +!doAction(X) <- 
 	do(skip).
 	
 /**
  * Check wheteher my goal isn't goal of my friend.
  */
+@isGoalAvailable[atomic]
 +!isGoalAvailable(A,X,Y, Result) <-
 	.findall(F, friend(F), Friends);
 	.nth(0, Friends, Slow);
@@ -519,6 +540,7 @@ verticalCounter(0).
 /**
  * Get goals of my friends.
  */
+@getGoals[atomic]
 +!getGoals <-
 	.findall(F, friend(F), Friends);
 	.nth(0, Friends, Slow);
@@ -530,6 +552,7 @@ verticalCounter(0).
 /**
  * Get coordinates of closest known and nongoaled wood.
  */
+@getClosest0[atomic]
 +!getClosest(wood, X, Y): wood(_,_) <- 
 	!getGoals;
 	?pos(U,V);
@@ -550,6 +573,7 @@ verticalCounter(0).
 /**
  * Get coordinates of closest known and nongoaled gold.
  */
+@getClosest1[atomic]
 +!getClosest(gold, X, Y): gold(_,_) <- 
 	!getGoals;
 	?pos(U,V);
@@ -585,6 +609,11 @@ verticalCounter(0).
  * Set goals and do actions.
  */	
 +step(_) <- 
+	.findall(F, friend(F), Friends);
+	.nth(0, Friends, Slow);
+	.nth(1, Friends, Fast);
+	.abolish(goal(_,_,_)[source(Fast)]);
+	.abolish(goal(_,_,_)[source(Slow)]);
 	!setGoal;
 	!move;
 	if (moves_left(M) & M > 0){
@@ -592,7 +621,7 @@ verticalCounter(0).
 		!move;
 	}.
 	
-	
+@setGoal0[atomic]
 +!setGoal: gloves(A,B) & glovesNeeded <-
 	if (not goal(gloves,_,_)) {
 		if (goal(gold,X,Y)) {
@@ -603,12 +632,14 @@ verticalCounter(0).
 		+goal(gloves, A, B)
 	}.
 	
+@setGoal1[atomic]
 +!setGoal: carrying_capacity(C) & carrying_gold(G) & (G == C) | 
 			  carrying_capacity(C) & carrying_wood(W) & (W == C) <-
 	?depot(A,B);
 	-goal(_,_,_);
 	+goal(depot,A,B).
 	
+@setGoal2[atomic]
 +!setGoal: carrying_wood(W) & (W > 0) <-
 	!getGoals;
 	.findall(F, friend(F), Friends);
@@ -623,8 +654,11 @@ verticalCounter(0).
 		?depot(K,L);
 		-goal(_,_,_);
 		+goal(depot,K,L);
-	}.
+	}
+	.abolish(goal(_,_,_)[source(Fast)]);
+	.abolish(goal(_,_,_)[source(Slow)]).
 	
+@setGoal3[atomic]
 +!setGoal: carrying_gold(G) & (G > 0) <-
 	!getGoals;
 	.findall(F, friend(F), Friends);
@@ -641,8 +675,11 @@ verticalCounter(0).
 		?depot(K,L);
 		-goal(_,_,_);
 		+goal(depot,K,L);
-	}.
+	}
+	.abolish(goal(_,_,_)[source(Fast)]);
+	.abolish(goal(_,_,_)[source(Slow)]).
 	
+@setGoal4[atomic]
 +!setGoal <- 
 	!getGoals;
 	.findall(F, friend(F), Friends);
@@ -679,14 +716,19 @@ verticalCounter(0).
 			-goal(_,_,_);
 			+goal(wood,K,L);
 		};
-	}.	
+	}
+	.abolish(goal(_,_,_)[source(Fast)]);
+	.abolish(goal(_,_,_)[source(Slow)]).	
 	
-+!move: goal(G,X,Y) & pos(X,Y) <-
+@move0[atomic]
++!move: goal(G,X,Y)[source(self)] & pos(X,Y) <-
 	!doAction(G).
-	
-+!move: goal(G,X,Y) <-
+
+@move1[atomic]	
++!move: goal(G,X,Y)[source(self)] <-
 	!goTo(X,Y).
 	
+@move2[atomic]
 +!move <-
 	//!goRandom. // Choose different heuristic.
 	!goByRows.

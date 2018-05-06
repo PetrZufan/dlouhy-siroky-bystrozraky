@@ -1,4 +1,4 @@
-// TODO: obchazeni preazek
+// TODO:
 //		 zlato - zadost o pomoc + zruseni
 //		 transfer
 
@@ -87,7 +87,15 @@ verticalCounter(0).
 +!goTo(X,Y): pos(X,Y).
 
 +!goTo(X,Y): goAround(W,Z) <-
-	!goAround(X,Y,W,Z).
+	if (destination(X,Y)){
+		!goAround(X,Y,W,Z);
+	} else {
+		-destination(_,_);
+		-source(_,_);
+		-goAround(_,_);
+		!goTo(X,Y);
+	}.
+	
 
 +!goTo(X,Y) <-
 	?pos(A,B);
@@ -107,6 +115,7 @@ verticalCounter(0).
 	if (Y > B) {
 		if (obstacle(A,B+1)) {
 			+source(A,B);
+			+destination(X,Y);
 			+goAround(v,down);
 			!goTo(X,Y);
 		} else {
@@ -115,6 +124,7 @@ verticalCounter(0).
 	} else {
 		if (obstacle(A,B-1)) {
 			+source(A,B);
+			+destination(X,Y);
 			+goAround(v,up);
 			!goTo(X,Y);
 		} else {
@@ -130,6 +140,7 @@ verticalCounter(0).
 	if (X > A) {
 		if (obstacle(A+1,B)) {
 			+source(A,B);
+			+destination(X,Y);
 			+goAround(h,right);
 			!goTo(X,Y);
 		} else {
@@ -138,6 +149,7 @@ verticalCounter(0).
 	} else {
 		if (obstacle(A-1,B)) {
 			+source(A,B);
+			+destination(X,Y);
 			+goAround(h,left);
 			!goTo(X,Y);
 		} else {
@@ -297,9 +309,10 @@ verticalCounter(0).
 	}.
 	
 /**
- * Walk around obstacle.
+ * Walk around obstacle in clockwise direction.
  */
-+!goAroundX(X,Y,W,Z) <-
++!goAroundX(X,Y,W,Z): obstaclesDirection(0) <-
+	?grid_size(K,L);
 	?pos(A,B);
 	if (Z == right) {
 		if (obstacle(A+1,B)){
@@ -309,7 +322,13 @@ verticalCounter(0).
 		} else {
 			-goAround(_,_);
 			+goAround(W,up);
-			!go(right);
+			if (A == K-1) {
+				-obstaclesDirection(0);
+				+obstaclesDirection(1);
+				!goAroundX(X,Y,W,up);
+			} else {
+				!go(right);
+			};
 		};
 	};
 	if (Z == down) {
@@ -320,7 +339,13 @@ verticalCounter(0).
 		} else {
 			-goAround(_,_);
 			+goAround(W,right);
-			!go(down);
+			if (B == L-1) {
+				-obstaclesDirection(0);
+				+obstaclesDirection(1);
+				!goAroundX(X,Y,W,right);
+			} else {
+				!go(down);
+			};
 		};
 	};
 	if (Z == left) {
@@ -331,7 +356,13 @@ verticalCounter(0).
 		} else {
 			-goAround(_,_);
 			+goAround(W,down);
-			!go(left);
+			if (A == 0) {
+				-obstaclesDirection(0);
+				+obstaclesDirection(1);
+				!goAroundX(X,Y,W,down);
+			} else {
+				!go(left);
+			};
 		};
 	};
 	if (Z == up) {
@@ -342,9 +373,94 @@ verticalCounter(0).
 		} else {
 			-goAround(_,_);
 			+goAround(W,left);
-			!go(up);
+			if (B == 0) {
+				-obstaclesDirection(0);
+				+obstaclesDirection(1);
+				!goAroundX(X,Y,W,left);
+			} else {
+				!go(up);
+			};
 		};
 	}.
+	
+/**
+ * Walk around obstacle in reverse clockwise direction.
+ */
++!goAroundX(X,Y,W,Z): obstaclesDirection(1) <-
+	?grid_size(K,L);
+	?pos(A,B);
+	if (Z == right) {
+		if (obstacle(A+1,B)){
+			-goAround(_,_);
+			+goAround(W,up);
+			!goAroundX(X,Y,W,up);
+		} else {
+			-goAround(_,_);
+			+goAround(W,down);
+			if (A == K-1) {
+				-obstaclesDirection(1);
+				+obstaclesDirection(0);
+				!goAroundX(X,Y,W,down);
+			} else {
+				!go(right);
+			};
+		};
+	};
+	if (Z == down) {
+		if (obstacle(A,B+1)){
+			-goAround(_,_);
+			+goAround(W,right);
+			!goAroundX(X,Y,W,right);
+		} else {
+			-goAround(_,_);
+			+goAround(W,left);
+			if (B == L-1) {
+				-obstaclesDirection(1);
+				+obstaclesDirection(0);
+				!goAroundX(X,Y,W,left);
+			} else {
+				!go(down);
+			};
+		};
+	};
+	if (Z == left) {
+		if (obstacle(A-1,B)){
+			-goAround(_,_);
+			+goAround(W,down);
+			!goAroundX(X,Y,W,down);
+		} else {
+			-goAround(_,_);
+			+goAround(W,up);
+			if (A == 0) {
+				-obstaclesDirection(1);
+				+obstaclesDirection(0);
+				!goAroundX(X,Y,W,up);
+			} else {
+				!go(left);
+			};
+		};
+	};
+	if (Z == up) {
+		if (obstacle(A,B-1)){
+			-goAround(_,_);
+			+goAround(W,left);
+			!goAroundX(X,Y,W,left);
+		} else {
+			-goAround(_,_);
+			+goAround(W,right);
+			if (B == 0) {
+				-obstaclesDirection(1);
+				+obstaclesDirection(0);
+				!goAroundX(X,Y,W,right);
+			} else {
+				!go(up);
+			};
+		};
+	}.	
+	
++!goAroundX(X,Y,W,Z) <-
+	+obstaclesDirection(0);
+	!goAroundX(X,Y,W,Z).
 	
 /**
  * If left enough moves.
@@ -539,19 +655,23 @@ verticalCounter(0).
 +!setGoal: carrying_capacity(C) & carrying_gold(G) & (G == C) | 
 			  carrying_capacity(C) & carrying_wood(W) & (W == C) <-
 	?depot(A,B);
+	-goal(_,_,_);
 	+goal(depot,A,B).
 	
 +!setGoal: transfer <-
 	?pos(X,Y);
+	-goal(_,_,_);
 	+goal(transfer,X,Y).
 	
 +!setGoal: carrying_wood(W) & (W > 0) <-
 	if (not wood(U,V)) {
 		?depot(K,L);
+		-goal(_,_,_);
 		+goal(depot,K,L);
 	} else {
 		!getClosest(wood,K,L);
 		if (K \== -1 & L \== -1) {
+			-goal(_,_,_);
 			+goal(wood,K,L);
 		};
 	}.
@@ -559,10 +679,12 @@ verticalCounter(0).
 +!setGoal: carrying_gold(G) & (G > 0) <-
 	if (not gold(U,V)) {
 		?depot(K,L);
+		-goal(_,_,_);
 		+goal(depot,K,L);
 	} else {
 		!getClosest(gold,K,L);
 		if (K \== -1 & L \== -1) {
+			-goal(_,_,_);
 			+goal(gold,K,L);
 			.findall(F, friend(F), Friends);
 			.send(Friends, tell, help(K,L)); //TODO: call for help.
@@ -573,6 +695,7 @@ verticalCounter(0).
 	if (wood(U,V) | gold(U,V)){
 		!getClosest(A,K,L);
 		if (K \== -1 & L \== -1) {
+			-goal(_,_,_);
 			+goal(A,K,L);
 			if (A == gold) {
 				.findall(F, friend(F), Friends);
@@ -591,8 +714,5 @@ verticalCounter(0).
 +!move <-
 	//!goRandom. // Choose different heuristic.
 	!goByRows.
-
-+goal(_,_,_): goAround(_,_) <-
-	-goAround(_,_);
-	-source(_,_).
+	
 

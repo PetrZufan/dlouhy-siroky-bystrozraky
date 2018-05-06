@@ -19,12 +19,11 @@ verticalCounter(0).
 	.abolish(prepared(_)); +prepared(true);
 .
 
-+step(X): prepared(P) & visibility(V) <-
++step(X): prepared(P) & P & visibility(V) <-
 	if (P) {
 		.count(helpNeeded(HX, HY), HN);
 		if (HN > 0) {
-			?helpNeeded(HX, HY);
-			
+			?helpNeeded(HX, HY);				
 			.abolish(goal(_, _)); +goal(HX, HY);
 			.abolish(activity(_)); +activity(help_with_gold);
 			!check_fields;
@@ -64,7 +63,7 @@ verticalCounter(0).
 							!goTo(GX, GY);
 							!do_action;
 						} else {
-							do(skip); .print("SKIPPING 56");
+							do(skip);
 						}
 					} else {
 						!check_fields;
@@ -76,7 +75,7 @@ verticalCounter(0).
 			}
 		}
 	} else {
-		do(skip); .print("SKIPPING 78");
+		do(skip); 
 	}
 .
 
@@ -249,14 +248,9 @@ verticalCounter(0).
 	}.
 	
 @gox[atomic] +!go(X): moves_left(N) & N <= 0 <- true.
-@goxx[atomic] +!go(X) <-
-	.count(moves_left(_), MFCOUNT);
-	if (MFCOUNT > 0) {
-		?moves_left(REALLY);
-		if (REALLY > 0) {
-			.print(X, " DO <---");
-			do(X); .print("MOVING 253");
-		}
+@goxx[atomic] +!go(X): moves_left(N) & N > 0 <-
+	if (N > 0) {
+		do(X);
 	}.
 	
 /**
@@ -453,7 +447,7 @@ verticalCounter(0).
 		?moves_left(MF);
 		if (MF > 0) {
 			if (Activity == spectacles) {	
-				do(pick); .print("PICKING SPEC 444");
+				do(pick); 
 				.abolish(visibility(_)); +visibility(6);
 				.abolish(activity(_)); +activity(explore);
 				.abolish(goal(_, _)); +goal(none, none);
@@ -465,26 +459,26 @@ verticalCounter(0).
 					.abolish(wood(A, B));
 					.abolish(activity(_)); +activity(go_home);
 					.abolish(goal(_, _)); +goal(DX, DY);
-					do(pick); .print("PICKING WOOD 453");
+					do(pick); 
 				} else {
 					.abolish(wood(A, B));
-					do(skip); .print("SKIPPING 459");
+					do(skip); 
 				}
 			}
 			
 			if (Activity == help_with_gold) {
-				do(skip); .print("SKIPPING 464");
+				do(skip); 
 				.abolish(helpNeeded(A, B));
 				.abolish(activity(_)); +activity(explore);
 			}
 			
 			if (Activity == go_home) {
-				do(drop); .print("DROPING 470");
+				do(drop); 
 				.abolish(activity(_)); +activity(harvest_wood);
 			}
 			
 			if (Activity == explore) {
-				do(skip); .print("SKIPPING 475");
+				do(skip); 
 			}
 		}
 	}

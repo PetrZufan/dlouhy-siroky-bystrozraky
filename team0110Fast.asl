@@ -2,7 +2,7 @@ shoesNeeded.
 
 
 !start.
-+!start <- !randomizeGoTo.
+@start[atomic] +!start <- !randomizeGoTo.
 
 
 +step(_) <- while (moves_left(N) & N > 0) { !tryFindGoal; !go; }.
@@ -79,7 +79,7 @@ shoesNeeded.
 +!go: pos(A, B) & goal(_, A, B) <- -goal(_, A, B); !go.
 +!go: pos(A, B) & goal(_, X, Y) <- !goTo(X, Y).
 
-+!go: pos(A, B) & goTo(A, B) <- -goTo(A, B); !randomizeGoTo.
++!go: pos(A, B) & goTo(A, B) <- -goTo(A, B); !randomizeGoTo; !go.
 +!go: pos(A, B) & goTo(X, Y) <- !goTo(X, Y).
 
 +!go: moves_left(N) & N > 0 <- !randomizeGoTo. // !go(skip).

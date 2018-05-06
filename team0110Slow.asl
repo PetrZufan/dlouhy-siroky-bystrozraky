@@ -154,7 +154,7 @@ last_move(none).
 		| (MD == right & obstacle(A + 1, B))
 		| (MD == down & obstacle(A, B + 1))
 		| (MD == left & obstacle(A - 1, B))) {
-		if (MP == up & obstacle(A, B - 1)) {
+		if (MD == up & obstacle(A, B - 1)) {
 			if (LM == left) {
 				.print("Chtel jsem jit ", MD, "ale nemuzu, tak jsem chtel jit nahoru, ale taky nemuzu, tak bych sel vpravo, ale prisel jsem z tama, tak jdu dolu");
 				.abolish(move_priority(_)); +move_priority(down);
@@ -163,7 +163,7 @@ last_move(none).
 				.abolish(move_priority(_)); +move_priority(right);
 			}	
 		} else {
-			if (MP == right & obstacle(A + 1, B)) {
+			if (MD == right & obstacle(A + 1, B)) {
 				if (LM == up) {
 					.print("Chtel jsem jit ", MD, "ale nemuzu, tak jsem chtel jit vpravo, ale taky nemuzu, tak bych sel dolu, ale prisel jsem z tama, tak jdu vlevo");
 					.abolish(move_priority(_)); +move_priority(left);
@@ -172,7 +172,7 @@ last_move(none).
 					.abolish(move_priority(_)); +move_priority(down);
 				}
 			} else {
-				if (MP == down & obstacle(A, B + 1)) {
+				if (MD == down & obstacle(A, B + 1)) {
 					if (LM == right) {
 						.print("Chtel jsem jit ", MD, "ale nemuzu, tak jsem chtel jit dolu, ale taky nemuzu, tak bych sel vlevo, ale prisel jsem z tama, tak jdu nahoru");
 						.abolish(move_priority(_)); +move_priority(up);
@@ -181,8 +181,8 @@ last_move(none).
 						.abolish(move_priority(_)); +move_priority(left);
 					}
 				} else {
-					if (MP == left & obstacle(A - 1, B)) {
-						if (LM == down) {
+					if (MD == left & obstacle(A - 1, B)) {
+						if (LM == up) {
 							.print("Chtel jsem jit ", MD, "ale nemuzu, tak jsem chtel jit doleva, ale taky nemuzu, tak bych sel nahoru, ale prisel jsem z tama, tak jdu vpravo");
 							.abolish(move_priority(_)); +move_priority(right);
 						} else {
@@ -202,7 +202,31 @@ last_move(none).
 			| (MD == down & not obstacle(A, B + 1))
 			| (MD == left & not obstacle(A - 1, B))) {
 			.abolish(move_priority(_)); +move_priority(none);
-			.print("Chtel jsem jit: ", MD, " a ted muzu");
+			if (MD == left & LM == right) {
+				if (not obstacle(A + 1, B) & (A + 1 < X)) {
+					.print("chtel jsem jit left, a sice muzu, ale prisel jsem z tama, tak pokracuju right"); +move_priority(right);
+				} else {
+					.print("chtel jsem jit left, a sice muzu, ale prisel jsem z tama, tak pokracuju right, ale nejde to, tak jdu dolu"); +move_priority(down);
+				}
+			} else {
+				if (MD == up & LM == down) {
+					if (not obstacle(A, B + 1) & (B + 1 < Y)) {
+						.print("chtel jsem jit up, a sice muzu, ale prisel jsem z tama, tak pokracuju down"); +move_priority(down);
+					} else {
+						.print("chtel jsem jit up, a sice muzu, ale prisel jsem z tama, tak pokracuju down, ale nejde to, tak jdu left"); +move_priority(left);
+					}
+				} else {
+					if (MD == right & LM == left) {
+						.print("chtel jsem jit right, a sice muzu, ale prisel jsem z tama, tak pokracuju left"); +move_priority(left);
+					} else {
+						if (MD == down & LM == UP) {
+							.print("chtel jsem jit down, a sice muzu, ale prisel jsem z tama, tak pokracuju up"); +move_priority(up);
+						} else {
+							.print("Chtel jsem jit: ", MD, " a ted muzu");
+						}
+					}
+				}
+			}
 		} else {
 			if (A > X) { // goal is on the left	
 				.abolish(move_desire(_)); +move_desire(left);
@@ -222,6 +246,7 @@ last_move(none).
 						.print("Chtel jsem jit vlevo, ale prisel jsem z prava, takze jdu ", MP);
 						.abolish(move_priority(_)); +move_priority(none);
 					} else {
+						.print("MY LAST MOVE: ", LM, " <------------------------");
 						.abolish(move_priority(_)); +move_priority(none); .print("jdu vlevo");
 					}
 				}
@@ -244,6 +269,7 @@ last_move(none).
 					if (LM == left) {
 						.print("Chtel jsem jit vpravo, ale prisel jsem z leva, tak jdu ", MP);
 					} else {
+						.print("MY LAST MOVE: ", LM, " <------------------------");
 						.abolish(move_priority(_)); +move_priority(none); .print("Jdu vpravo");
 					}
 				}
@@ -267,6 +293,7 @@ last_move(none).
 						if (LM == down) {
 							.print("Chtel jsem jit nahoru, ale prisel jsem ze spod, tak jdu ", MP);
 						} else {
+							.print("MY LAST MOVE: ", LM, " <------------------------");
 							.abolish(move_priority(_)); +move_priority(none); .print("Jdu nahoru");
 						}
 					}
@@ -289,8 +316,8 @@ last_move(none).
 						if (LM = up) {
 							.print("Chtel jsem jit dolu, ale prisel jsem ze shora, tak jdu ", MP);
 						} else {
-							.abolish(move_priority(_)); +move_priority(none);
-							.print("Jdu dolu");
+							.print("MY LAST MOVE: ", LM, " <------------------------");
+							.abolish(move_priority(_)); +move_priority(none); .print("Jdu dolu");
 						}
 					}
 				}

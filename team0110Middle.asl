@@ -1,7 +1,3 @@
-// TODO:
-//		 zlato - zadost o pomoc + zruseni
-//		 transfer
-
 
 glovesNeeded.
 direction(left, down).
@@ -492,19 +488,11 @@ verticalCounter(0).
 	
 +!doAction(gold): pos(X,Y) & ally(X,Y) & moves_left(M) & moves_per_round(M) <- 
 	-goal(_,_,_);
-	+transfer;
 	?pos(X,Y);
 	-gold(X,Y)[source(_)];
 	.findall(F, friend(F), Friends);
 	.send(Friends, untell, gold(X,Y)[source(_)]);
 	do(pick).
-	
-+!doAction(transfer): pos(X,Y) & ally(X,Y) & moves_left(M) & moves_per_round(M) <-
-	-transfer;
-	-goal(_,_,_);
-	for(friend(F)) {
-		do(transfer,F,1);	//TODO: test. Maybe cause some error. Dont know how to get a name of ally.
-	}.
 	
 /**
  * Wait for friends arrival.
@@ -620,11 +608,6 @@ verticalCounter(0).
 	?depot(A,B);
 	-goal(_,_,_);
 	+goal(depot,A,B).
-	
-+!setGoal: transfer <-
-	?pos(X,Y);
-	-goal(_,_,_);
-	+goal(transfer,X,Y).
 	
 +!setGoal: carrying_wood(W) & (W > 0) <-
 	!getGoals;

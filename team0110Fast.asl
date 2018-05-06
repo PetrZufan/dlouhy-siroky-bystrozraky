@@ -16,7 +16,7 @@ shoesNeeded.
 	!isGoalAvailable(wood, X, Y, R);
 	if (R) { +goal(wood, X, Y); }
 	else { -goal(wood, X, Y); }.
-+shoes(X, Y) <- +goal(shoes, X, Y).
++shoes(X, Y): shoesNeeded <- +goal(shoes, X, Y).
 
 +helpNeeded(X, Y) <-
 	if (carrying_wood(N) & N > 0) { +goToDepot; }
@@ -31,8 +31,9 @@ shoesNeeded.
 
 
 +!tryFindGoal: goal(_, _, _).
-+!tryFindGoal: wood(A, B) <- +goal(wood, A, B).
++!tryFindGoal: helpNeeded(A, B) <- +goal(help, A, B).
 +!tryFindGoal: shoesNeeded & shoes(A, B) <- +goal(shoes, A, B).
++!tryFindGoal: wood(A, B) <- +goal(wood, A, B).
 +!tryFindGoal: carrying_wood(N) & N > 1 <- +goToDepot.
 +!tryFindGoal.
 
@@ -132,7 +133,8 @@ shoesNeeded.
 				if (X > A) { !go(right); } else { !go(left); }
 			}
 		}
-	}.
+	};
+	!go(skip).
 
 	
 /* GoTo random edge */

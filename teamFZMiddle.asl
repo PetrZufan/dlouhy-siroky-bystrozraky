@@ -1,4 +1,7 @@
++step(X)<-do(skip);do(skip).
 
+
+/*
 glovesneeded.
 
 +step(0) <- .println("START");?grid_size(A,B);+right(A);+down(B);+right;do(skip);do(skip).
@@ -16,4 +19,4 @@ glovesneeded.
  +!go: left<-  -left;+right;do(down);do(skip).
 
 
-
+*/

@@ -20,9 +20,9 @@ shoesNeeded.
 
 +helpNeeded(X, Y) <-
 	if (carrying_wood(N) & N > 0) { +goToDepot; }
-	+goal(X, Y); +goTo(X, Y).
+	+goal(help, X, Y); +goTo(X, Y).
 -helpNeeded(X, Y) <-
-	-goal(X, Y); -goTo(X, Y).
+	-goal(help, X, Y); -goTo(X, Y).
 
 -wood(X, Y) <- -goal(wood, X, Y).
 -shoes(X, Y) <- -goal(shoes, X, Y).
@@ -30,9 +30,9 @@ shoesNeeded.
 +goTo(X,Y) <- .print("+goTo(", X, ",", Y, ")").
 
 
-+!tryFindGoal: goal(_, _).
-+!tryFindGoal: wood(A, B) <- +goal(A, B).
-+!tryFindGoal: shoesNeeded & shoes(A, B) <- +goal(A, B).
++!tryFindGoal: goal(_, _, _).
++!tryFindGoal: wood(A, B) <- +goal(wood, A, B).
++!tryFindGoal: shoesNeeded & shoes(A, B) <- +goal(shoes, A, B).
 +!tryFindGoal: carrying_wood(N) & N > 1 <- +goToDepot.
 +!tryFindGoal.
 
@@ -65,6 +65,9 @@ shoesNeeded.
 	}.
 
 +!go: goToDepot & depot(A, B) <- !goTo(A, B).
+
+@help[atomic] +!go: pos(A, B) & helpNeeded(A, B) & gold(A, B)[source(percept)] <-
+	while (moves_left(N) & N > 0) { do(skip); }.
 
 @pickShoes[atomic] +!go: pos(A, B) & shoesNeeded & shoes(A, B)[source(percept)] <-
 	if (moves_left(N) & moves_per_round(M) & N == M) {

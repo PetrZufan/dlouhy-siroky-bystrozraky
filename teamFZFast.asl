@@ -1,7 +1,7 @@
++step(X)<-do(skip);do(skip);do(skip).
 
 
-
- 
+/*
  
 +step(0) <- .println("START");?grid_size(A,B);+right(A);+down(B);+right;do(skip);do(skip);do(skip).
 
@@ -23,4 +23,4 @@
  +!go: left & pos(A,B) & A>0 <- do(left);do(skip);do(skip).	
  +!go: left<-  -left;+right;do(up);do(right);do(right).
 
-
+*/

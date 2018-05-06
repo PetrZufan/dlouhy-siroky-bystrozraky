@@ -1,249 +1,360 @@
-going_for_spectacles(false).
-going_for_wood(false).
-going_home(false).
-have_spectacles(false).
-my_goal(-1, -1, 9000).
-have_goal(true).
+prepared(false).
+activity(explore).
+visibility(3).
+
+goal(none, none).
+move_desire(none).
+move_priority(none).
+move_cancel(none).
+last_move(none).
 
 !start.
-@start[atomic] +!start <-
-	+ready(false);
-	?grid_size(X, Y);
+
+@initialize[atomic] +!start: grid_size(X, Y) <-
 	for (.range(I, 0, X - 1)) {
 		for (.range(J, 0, Y - 1)) {
-			+checked(I, J, false);
+			+field_checked(I, J, false);
 		}
 	}
 	
-	-+ready(true).
- 
-+step(X)<- 
-	?ready(R);
-	?have_goal(HG);
-	if (R & HG) {
-		?have_spectacles(S);
-		if (S == false) {
-			!check_for_spectacles;
-		}
-		!check_fields;
-	} else {
-		do(skip)
-	}.
+	.abolish(prepared(_)); +prepared(true);
+.
 
-@checkFieldsAtomic[atomic] +!check_fields <-
-	?grid_size(X, Y);
-	+all_checked(true);
++step(X): prepared(P) & visibility(V) <-
+	if (P) {
+		if (V == 3) {
+			!find_spectacles;
+		}
+		
+		?activity(Activity);
+		if (Activity == explore) {
+			!check_fields;
+			?activity(Activity_update);
+			if (Activity_update == explore) { // check if the agent did not explore all fields
+				!explore_next;
+				!figure_next_move;
+				!do_action;
+			} 
+			
+			if (Activity_update == harvest_wood) {
+				!find_wood;
+				!figure_next_move;
+				!do_action;
+			}
+		} else {	
+			if (Activity == spectacles | Activity == harvest_wood | Activity == go_home) {
+				if (Activity == harvest_wood) {
+					.count(wood(WX, WY), N);
+					if (N > 0) {
+						!find_wood;
+						!figure_next_move;
+						!do_action;
+					} else {
+						do(skip);
+					}
+				} else {
+					!figure_next_move;
+					!do_action;
+				}
+			}
+		}
+	} else {
+		do(skip);
+	}
+.
+
+@checkAll[atomic] +!check_fields: grid_size(X, Y) & pos(A, B) & visibility(V) <-
+	// check if all fields are explored
+	.abolish(all_checked(_)); +all_checked(true);
 	for (.range(I, 0, X - 1)) {
 		for (.range(J, 0, Y - 1)) {
-			?checked(I, J, RESULT);
-			if (RESULT == false) {
-				.abolish(all_checked(_));
-				+all_checked(false);
+			?field_checked(I, J, IS_CHECKED);
+			if (not IS_CHECKED) {
+				.abolish(all_checked(_)); +all_checked(false);
 			}
 		}
 	}
 	
-	?all_checked(RES);
-	if (RES == true) {
-		.count(wood_spotted(_, _), N);
-		if (N < 0) {
-			do(skip);
+	?all_checked(ALL_FIELDS_CHECKED);
+	if (ALL_FIELDS_CHECKED) {
+		.abolish(activity(_)); +activity(harvest_wood);
+	} else {
+		for (.range(I, -V, V)) {
+			for (.range(J, -V, V)) {
+				!check_field(A - I, B - J);
+			}
+		}
+	}
+.
+
+@checkOne[atomic] +!check_field(A, B): grid_size(X, Y) <-
+	if (A >= 0 & B >= 0 & A < X & B < Y) { // field have to be on the grid
+		?field_checked(A, B, IS_CHECKED);
+		if (not IS_CHECKED) {
+			.findall(F, friend(F), Friends);
+			if (obstacle(A, B)) {
+				.send(Friends, tell, obstacle(A, B));
+			}
+			
+			if (gold(A, B)) {
+				.send(Friends, tell, gold(A, B)); +gold(A, B);
+			}
+			
+			if (wood(A, B)) {
+				.send(Friends, tell, wood(A, B)); +wood(A, B);
+			}
+			
+			if (gloves(A, B)) {
+				.send(Friends, tell, gloves(A, B));
+			}
+			
+			if (shoes(A, B)) {
+				.send(Friends, tell, shoes(A, B));
+			}
+			
+			if (depot(A, B)) {
+				.send(Friends, tell, depot(A, B));
+			}
+			
+			.abolish(field_checked(A, B, _)); +field_checked(A, B, true);
+		}
+	}
+.
+
+@search[atomic] +!explore_next: grid_size(X, Y) & pos(A, B) <-
+	for (.range(I, 0, X - 1)) {
+		for(.range(J, 0, Y - 1)) {
+			?field_checked(I, J, IS_CHECKED);
+			?goal(GOAL_X, GOAL_Y);	
+			if (not IS_CHECKED) {
+				
+				if (GOAL_X == none & GOAL_Y == none) {
+					.abolish(goal(_, _)); +goal(I, J);
+				} else {
+					?field_checked(GOAL_X, GOAL_Y, IS_GOAL_CHECKED);
+					if (IS_GOAL_CHECKED) {
+						.abolish(goal(_, _)); +goal(I, J);
+					} 
+					else {
+						// Compute the distance for different goals and go to the one which is closer
+						O_Distance = math.abs(A - GOAL_X) + math.abs(B - GOAL_X);
+						N_Distance = math.abs(A - I) + math.abs(B - J);
+						if (O_Distance > N_Distance) {
+							.abolish(goal(_, _)); +goal(I, J);
+						}
+					}
+				}
+			}
+		}
+	}
+.
+
+@direction[atomic] +!figure_next_move: pos(A, B) & grid_size(GX, GY) & goal(X, Y) & move_priority(MP) & move_desire(MD) & last_move(LM) <-
+	if ((MD == up & obstacle(A, B - 1))
+		| (MD == right & obstacle(A + 1, B))
+		| (MD == down & obstacle(A, B + 1))
+		| (MD == left & obstacle(A - 1, B))) {
+		if (MP == up & obstacle(A, B - 1)) {
+			if (LM == left) {
+				.print("Chtel jsem jit ", MD, "ale nemuzu, tak jsem chtel jit nahoru, ale taky nemuzu, tak bych sel vpravo, ale prisel jsem z tama, tak jdu dolu");
+				.abolish(move_priority(_)); +move_priority(down);
+			} else {
+				.print("Chtel jsem jit ", MD, "ale nemuzu, tak jsem chtel jit nahoru, ale taky nemuzu, tak jdu vpravo");
+				.abolish(move_priority(_)); +move_priority(right);
+			}	
 		} else {
-			?going_home(GH);
-				if (GH == false) {
-				?pos(A, B);
-				for (.range(I, 0, X - 1)) {
-					for (.range(J, 0, Y - 1)) {
-						.count(wood_spotted(I, J), WS_ACC);
-						if (WS_ACC > 0) {
-							DISTANCE = math.abs(A - I) + math.abs(B - J);
-							.count(wood_near(_, _, _), WNC);
-							if (WNC > 0) {
-								?wood_near(WX, WY, WDISTANCE);
-								if (WDISTANCE > DISTANCE) {
-									.abolish(wood_near(_, _, _));
-									+wood_near(I, J, DISTANCE);
-								}
+			if (MP == right & obstacle(A + 1, B)) {
+				if (LM == up) {
+					.print("Chtel jsem jit ", MD, "ale nemuzu, tak jsem chtel jit vpravo, ale taky nemuzu, tak bych sel dolu, ale prisel jsem z tama, tak jdu vlevo");
+					.abolish(move_priority(_)); +move_priority(left);
+				} else {
+					.print("Chtel jsem jit ", MD, "ale nemuzu, tak jsem chtel jit vpravo, ale taky nemuzu, tak jdu dolu");
+					.abolish(move_priority(_)); +move_priority(down);
+				}
+			} else {
+				if (MP == down & obstacle(A, B + 1)) {
+					if (LM == right) {
+						.print("Chtel jsem jit ", MD, "ale nemuzu, tak jsem chtel jit dolu, ale taky nemuzu, tak bych sel vlevo, ale prisel jsem z tama, tak jdu nahoru");
+						.abolish(move_priority(_)); +move_priority(up);
+					} else {
+						.print("Chtel jsem jit ", MD, "ale nemuzu, tak jsem chtel jit dolu, ale taky nemuzu, tak jdu vlevo");
+						.abolish(move_priority(_)); +move_priority(left);
+					}
+				} else {
+					if (MP == left & obstacle(A - 1, B)) {
+						if (LM == down) {
+							.print("Chtel jsem jit ", MD, "ale nemuzu, tak jsem chtel jit doleva, ale taky nemuzu, tak bych sel nahoru, ale prisel jsem z tama, tak jdu vpravo");
+							.abolish(move_priority(_)); +move_priority(right);
+						} else {
+							.print("Chtel jsem jit ", MD, "ale nemuzu, tak jsem chtel jit doleva, ale taky nemuzu, tak jdu nahoru");
+							.abolish(move_priority(_)); +move_priority(up);
+						}
+					} else {
+						.print("Chtel jsem jit ", MD, " a muzu, tak jdu!");
+						.abolish(move_priority(_)); +move_priority(none);
+					}
+				}
+			}
+		}		
+	} else {
+		if ((MD == up & not obstacle(A, B - 1))
+			| (MD == right & not obstacle(A + 1, B))
+			| (MD == down & not obstacle(A, B + 1))
+			| (MD == left & not obstacle(A - 1, B))) {
+			.abolish(move_priority(_)); +move_priority(none);
+			.print("Chtel jsem jit: ", MD, " a ted muzu");
+		} else {
+			if (A > X) { // goal is on the left	
+				.abolish(move_desire(_)); +move_desire(left);
+				if (obstacle(A - 1, B)) { // if cannot go left, try around it
+					.abolish(move_priority(_));
+					if (not obstacle(A, B + 1) & (B + 1 < GY & not LM == up)) {
+						+move_priority(down); .print("Chtel jsem vlevo, ale bude to lepsi dolu");
+					} else {
+						if (not obstacle(A, B - 1) & (B - 1 >= 0) & not LM == down) {
+							+move_priority(up); .print("Chtel jsem vlevo, ale bude to lepsi nahoru");
+						} else {
+							+move_priority(right); .print("Chtel jsem vlevo, ale nemuzu, nemuzu ani nahoru a od spodu jsem prisel, jdu vpravo");
+						}
+					}
+				} else {
+					if (LM == right) {
+						.print("Chtel jsem jit vlevo, ale prisel jsem z prava, takze jdu ", MP);
+						.abolish(move_priority(_)); +move_priority(none);
+					} else {
+						.abolish(move_priority(_)); +move_priority(none); .print("jdu vlevo");
+					}
+				}
+			}
+			
+			if (A < X) { // goal is on the right
+				.abolish(move_desire(_)); +move_desire(right);
+				if (obstacle(A + 1, B)) {
+					.abolish(move_priority(_));
+					if (not obstacle(A, B + 1) & (B + 1 < GY) & not LM == up) {
+						+move_priority(down); .print("Chtel jsem vpravo, ale bude to lepsi dolu");
+					} else {
+						if (not obstacle(A, B - 1) & (B - 1 >= 0) & not LM == down) {
+							+move_priority(up); .print("Chtel jsem vpravo, ale bude to lepsi nahoru");
+						} else {
+							+move_priority(left); .print("Chtel jsem vpravo, ale nemuzu, nemuzu ani nahoru a od spodu jsem prisel, jdu vlevo");
+						}
+					}
+				} else {
+					if (LM == left) {
+						.print("Chtel jsem jit vpravo, ale prisel jsem z leva, tak jdu ", MP);
+					} else {
+						.abolish(move_priority(_)); +move_priority(none); .print("Jdu vpravo");
+					}
+				}
+			}
+			
+			if (A == X) { //im on the right spot X
+				if (B > Y) { // im under the goal
+					.abolish(move_desire(_)); +move_desire(up);
+					if (obstacle(A, B - 1)) {
+						.abolish(move_priority(_));
+						if (not obstacle(A + 1, B) & (A + 1 < GX) & not LM == left) {
+							+move_priority(right); .print("Chtel jsem nahoru, ale bude to lepsi vpravo");
+						} else {
+							if (not obstacle(A - 1, B) & (A - 1 >= 0) & not LM == right) {
+								+move_priority(left); .print("Chtel jsem nahoru, ale bude to lepsi vlevo");
 							} else {
-								+wood_near(I, J, DISTANCE);
-							}
+								+move_priority(down); .print("Chtel jsem nahoru, ale nemuzu, nemuzu ani vlevo a z prava jsem prisel, jdu dolu");
+							}						
+						}
+					} else {
+						if (LM == down) {
+							.print("Chtel jsem jit nahoru, ale prisel jsem ze spod, tak jdu ", MP);
+						} else {
+							.abolish(move_priority(_)); +move_priority(none); .print("Jdu nahoru");
 						}
 					}
 				}
 				
-				?wood_near(WX, WY, DISTANCE);
-				!go_for_spotted_wood(WX, WY, DISTANCE);
-			}
-			
-			!do_move;
-		}
-	} else {
-		?pos(A, B);
-		?have_spectacles(HS);
-		if (HS == true) {
-			!check_field(A, B - 6);
-			!check_field(A - 1, B - 5); !check_field(A, B - 5); !check_field(A - 1, B - 5);
-			!check_field(A - 2, B - 4); !check_field(A - 1, B - 4); !check_field(A, B - 4); !check_field(A + 1, B - 4); !check_field(A + 2, B - 4);
-			!check_field(A - 3, B - 3); !check_field(A - 2, B - 3); !check_field(A - 1, B - 3); !check_field(A, B - 3); !check_field(A + 1, B - 3); !check_field(A + 2, B - 3); !check_field(A + 3, B - 3);
-			!check_field(A - 4, B - 2); !check_field(A - 3, B - 2); !check_field(A - 2, B - 2); !check_field(A - 1, B - 2); !check_field(A, B - 2); !check_field(A + 1, B - 2); !check_field(A + 2, B - 2); !check_field(A + 3, B - 2); !check_field(A + 4, B - 2);
-			!check_field(A - 5, B - 1); !check_field(A - 4, B - 1); !check_field(A - 3, B - 1); !check_field(A - 2, B - 1); !check_field(A - 1, B - 1); !check_field(A, B - 1); !check_field(A + 1, B - 1); !check_field(A + 2, B - 1); !check_field(A + 3, B - 1); !check_field(A + 4, B - 1); !check_field(A + 5, B - 1);
-			!check_field(A - 6, B); !check_field(A - 5, B); !check_field(A - 4, B); !check_field(A - 3, B); !check_field(A - 2, B); !check_field(A - 1, B); !check_field(A, B); !check_field(A + 1, B); !check_field(A + 2, B); !check_field(A + 3, B); !check_field(A + 4, B); !check_field(A + 5, B); !check_field(A + 6, B);
-			!check_field(A - 5, B + 1); !check_field(A - 4, B + 1); !check_field(A - 3, B + 1); !check_field(A - 2, B + 1); !check_field(A - 1, B + 1); !check_field(A, B + 1); !check_field(A + 1, B + 1); !check_field(A + 2, B + 1); !check_field(A + 3, B + 1); !check_field(A + 4, B + 1); !check_field(A + 5, B + 1);
-			!check_field(A - 4, B + 2); !check_field(A - 3, B + 2); !check_field(A - 2, B + 2); !check_field(A - 1, B + 2); !check_field(A, B + 2); !check_field(A + 1, B + 2); !check_field(A + 2, B + 2); !check_field(A + 3, B + 2); !check_field(A + 4, B + 2);
-			!check_field(A - 3, B + 3); !check_field(A - 2, B + 3); !check_field(A - 1, B + 3); !check_field(A, B + 3); !check_field(A + 1, B + 3); !check_field(A + 2, B + 3); !check_field(A + 3, B + 3);
-			!check_field(A - 2, B + 4); !check_field(A - 1, B + 4); !check_field(A, B + 4); !check_field(A + 1, B + 4); !check_field(A + 2, B + 4);
-			!check_field(A - 1, B + 5); !check_field(A, B + 5); !check_field(A - 1, B + 5);
-			!check_field(A, B + 6);
-			!find_nearest_unrevealed;
-			!do_move;
-		} else {
-			!check_field(A, B - 3);
-			!check_field(A - 1, B - 2); !check_field(A, B - 2); !check_field(A + 1, B - 2);	
-			!check_field(A - 2, B - 1); !check_field(A - 1, B - 1); !check_field(A, B - 1); !check_field(A + 1, B - 1); !check_field(A + 2, B - 1);
-			!check_field(A - 3, B); !check_field(A - 2, B); !check_field(A - 1, B); !check_field(A, B); !check_field(A + 1, B); !check_field(A + 2, B); !check_field(A + 3, B);
-			!check_field(A - 2, B + 1); !check_field(A - 1, B + 1); !check_field(A, B + 1); !check_field(A + 1, B + 1); !check_field(A + 2, B + 1);
-			!check_field(A - 1, B + 2); !check_field(A, B + 2); !check_field(A + 1, B + 2);
-			!check_field(A, B + 3);
-		
-			?going_for_spectacles(GOING);
-			if (GOING == false) {
-				!find_nearest_unrevealed;
-			}
-			!do_move;
-		}
-	}.
-
-@checkFieldAtomic[atomic] +!check_field(A, B) <-
-	?grid_size(X, Y);
-	if (A >= 0 & B >= 0 & A < X & B < Y) {
-		?checked(A, B, RESULT);
-		if (not RESULT) {
-			if (obstacle(A, B)) {
-				.send("aFast", tell, obstacle(A, B));
-				.send("aMiddle", tell, obstacle(A, B));
-			} 
-			
-			if (gold(A, B)) {
-				.send("aFast", tell, gold(A, B));
-				.send("aMiddle", tell, gold(A, B));
-			}
-			
-			if (wood(A, B)) {
-				+wood_spotted(A, B);
-				.send("aFast", tell, wood(A, B));
-				.send("aMiddle", tell, wood(A, B));
-			}
-			
-			if (gloves(A, B)) {
-				.send("aMiddle", tell, gloves(A, B)); 
-			}
-			
-			if (shoes(A, B)) {
-				.send("aFast", tell, shoes(A, B));
-			}
-			
-			if (depot(A, B)) {
-				.send("aFast", tell, depot(A, B));
-				.send("aMiddle", tell, depot(A, B));
-			}
-			
-			.abolish(checked(A, B, _));
-			+checked(A, B, true);
-		}
-	}.
-
-@search[atomic] +!find_nearest_unrevealed <-
-	?grid_size(X, Y);
-	?pos(A, B);
-	
-	for (.range(I, 0, X - 1)) {
-		for (.range(J, 0, Y - 1)) {
-			?checked(I, J, FIELD_CHECKED);
-			if (FIELD_CHECKED == false) {
-				NEW_DISTANCE = math.abs(A - I) + math.abs(B - J);
-				?my_goal(NEXT_X, NEXT_Y, DISTANCE);
-				if (NEW_DISTANCE < DISTANCE) {
-					.abolish(my_goal(_, _, _));
-					+my_goal(I, J, NEW_DISTANCE);
-				}
-			}
-		}
-	}.
-	
-@move[atomic] +!do_move <-
-	?pos(A, B);
-	?my_goal(X, Y, DISTANCE);
-	if (A > X) {
-		do(left);
-	} else {
-		if (A < X) {
-			do(right);
-		} else {
-			if (B > Y) {
-				do(up);
-			} else {
 				if (B < Y) {
-					do(down);
-				} else {
-					?going_for_spectacles(GFS);
-					?going_for_wood(GFW);
-					?going_home(GH);
-					if (GFS == true) {
-						do(pick);
-						.abolish(have_spectacles(_));
-						.abolish(going_for_spectacles(_));
-						+have_spectacles(true);
-						+going_for_spectacles(false);
-					} else {
-						if (GFW == true) {
-							do(pick);
-							.abolish(wood_near(_, _, _));
-							.abolish(wood_spotted(A, B));
-							.abolish(going_for_wood(_));
-							.abolish(going_home(_));
-							.abolish(my_goal(_, _, _));
-							+going_for_wood(false);
-							+going_home(true);
-							?depot(DX, DY);
-							+my_goal(DX, DY, math.abs(A - DX) + math.abs(B - DY));
+					.abolish(move_desire(_)); +move_desire(down);
+					if (obstacle(A, B + 1)) {
+						.abolish(move_priority(_));
+						if (not obstacle(A + 1, B) & (A + 1 < GX) & not LM == left) {
+							+move_priority(right); .print("Chtel jsem dolu, ale bude to lepsi vpravo");
 						} else {
-							if (GH == true) {
-								.abolish(going_home(_));
-								.abolish(my_goal(_, _, _));
-								.abolish(going_for_wood(_));
-								do(drop);
-								+going_for_wood(true);
-								+going_home(false);
+							if (not obstacle(A - 1, B) & (A - 1 >= 0) & not LM == right) {
+								+move_priority(left); .print("Chtel jsem dolu, ale bude to lepsi vlevo");
 							} else {
-								do(skip);
+								+move_priority(up); .print("chtel jsem dolu, ale nemuzu, nemuzu ani vlevo a z prava jsem prisel, jdu nahoru");
 							}
 						}
-					} 
-					
-					if (GFS == false & GFW == false & GH == false) {
-						.abolish(my_goal(_, _, _));
-						+my_goal(-1, -1, 9000);
+					} else {
+						if (LM = up) {
+							.print("Chtel jsem jit dolu, ale prisel jsem ze shora, tak jdu ", MP);
+						} else {
+							.abolish(move_priority(_)); +move_priority(none);
+							.print("Jdu dolu");
+						}
 					}
+				}
+				
+				if (B == Y) {
+					.abolish(move_priority(_)); +move_priority(none);
+					.abolish(move_desire(_)); +move_desire(none);
 				}
 			}
 		}
-	}.
+	}
+.
 
-@spectacles[atomic] +!check_for_spectacles <-
-	.count(spectacles(_, _), N);
-	if (N > 0) {
-		?spectacles(X, Y);
-		?pos(A, B);
-		.abolish(going_for_spectacles(_));
-		.abolish(my_goal(_, _, _));
-		+going_for_spectacles(true);		
-		+my_goal(X, Y, math.abs(A - X) + math.abs(B - Y));
-	}.
-	
-@spottedWood[atomic] +!go_for_spotted_wood(X, Y, DISTANCE) <-
-	.abolish(my_goal(_, _, _));
-	.abolish(going_for_wood(_));
-	+my_goal(X, Y, DISTANCE);
-	+going_for_wood(true).
-	
+@doMove[atomic] +!do_action: pos(A, B) & move_priority(MP) & move_desire(MD) & activity(Activity) <-
+	if (MP == none) {
+		if (MD == none) { // im on the right spot
+			if (Activity == spectacles) {
+				do(pick);
+				.abolish(visibility(_)); +visibility(6);
+				.abolish(activity(_)); +activity(explore);
+				.abolish(goal(_, _)); +goal(none, none);
+			}
+			
+			if (Activity == harvest_wood) {
+				if (wood(A, B)) {
+					?depot(DX, DY);
+					do(pick);
+					.abolish(wood(A, B));
+					.abolish(activity(_)); +activity(go_home);
+					.abolish(goal(_, _)); +goal(DX, DY);
+				} else {
+					.abolish(wood(A, B));
+					do(skip);
+				}	
+			}
+			
+			if (Activity == go_home) {
+				do(drop);
+				.abolish(activity(_)); +activity(harvest_wood);
+			}
+			
+			if (Activity == explore) {
+				do(skip);
+			}
+		} else { 
+			do(MD);
+			.abolish(last_move(_)); +last_move(MD);
+			.abolish(move_desire(_)); +move_desire(none);
+		}
+	} else {
+		.abolish(last_move(_)); +last_move(MP);
+		do(MP);
+	}
+.
+
+@noSpectacles[atomic] +!find_spectacles: not spectacles(X, Y) & pos(A, B) <- true.
+@spectacles[atomic] +!find_spectacles: spectacles(X, Y) & pos(A, B) <-
+	.abolish(activity(_)); +activity(spectacles);
+	.abolish(goal(_, _)); +goal(X, Y);
+.
+
+@noWood[atomic] +!find_wood: not wood(X, Y) & pos(A, B) <- true.
+@wood[atomic] +!find_wood: wood(X, Y) & pos(A, B) <- 
+	.abolish(goal(_, _)); +goal(X, Y);
+.
+
 

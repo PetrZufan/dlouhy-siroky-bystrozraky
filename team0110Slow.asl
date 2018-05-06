@@ -19,17 +19,17 @@ verticalCounter(0).
 	.abolish(prepared(_)); +prepared(true);
 .
 
-+step(X): prepared(P) & P & visibility(V) <-
+@ha[atomic] +step(X): prepared(P) & P & visibility(V) <-
 	if (P) {
 		.count(helpNeeded(HX, HY), HN);
 		if (HN > 0) {
-			?helpNeeded(HX, HY);				
-			.abolish(goal(_, _)); +goal(HX, HY);
-			.abolish(activity(_)); +activity(help_with_gold);
-			!check_fields;
-			?goal(GX, GY);
-			!goTo(GX, GY);
-			!do_action;
+			?helpNeeded(HX, HY);			
+				.abolish(goal(_, _)); +goal(HX, HY);
+				.abolish(activity(_)); +activity(help_with_gold);
+				!check_fields;
+				?goal(GX, GY);
+				!goTo(GX, GY);
+				!do_action;			
 		} else {
 	
 			if (V == 3) {
